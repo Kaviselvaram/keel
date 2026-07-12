@@ -1,0 +1,18 @@
+# KEEL — Risk Analysis
+
+> Document 16 · Status: FROZEN — Architecture v1.0 (2026-07-12) · Ordered by (likelihood × impact).
+
+| # | Risk | L | I | Mitigation (designed-in) | Future improvement |
+|---|------|---|---|--------------------------|--------------------|
+| 1 | **Residual nondeterminism** slips past interceptors+normalization → false divergences → users uninstall | High | Critical | capture-time verification replay (flaky probes rejected with the exact flapping path); determinism CI gate ×20 across OS matrix; ignore-rule escape hatch; determinism rate as the #1 tracked metric | grow interceptor coverage per ecosystem; community-contributed normalization rules for common frameworks |
+| 2 | **Probe-authoring friction** — developers won't write probes; empty configs = dead product | High | Critical | `keel init` proposal flow; probes derivable from package scripts; "5-minute first verdict" as a tested DX budget; agent can *propose* probes via MCP (human confirms) | test-suite harvesting (probes from existing test invocations) — likely the real long-term answer |
+| 3 | **Local LLM classification quality** too weak → labels ignored or misleading | High | High | three-valued labels (uncertain is honest); heuristic tier handles the majority deterministically; eval corpus gates template/model changes; verdict useful with zero AI (L2) | better local models over time (rising tide); per-divergence-kind specialized templates |
+| 4 | **Baseline staleness UX** — provenance checks correctly refuse to compare, but users experience "KEEL always says stale" on dirty working trees | Med-High | High | staleness verdict carries one-command remediation; `capture` is cheap and scriptable; dirty-tree policy configurable (warn vs refuse) | auto-recapture-on-commit hook (opt-in) |
+| 5 | **MCP spec churn** breaks agent integrations | Med | Med | single compat seam; pinned protocol revisions; golden schema tests | HTTP transport when stable; conformance matrix vs major hosts in CI |
+| 6 | **Cross-platform drift** (Windows process groups, path/encoding, clock shims) | Med | High | 3-OS CI from Phase 1 (not retrofitted); platform quirks isolated in execution engine; Windows Job Objects task explicitly scheduled | community platform maintainers |
+| 7 | **Store growth** eats repo disk silently | Med | Med | CAS dedup, compression, retention defaults, `keel status` size report, explicit `gc` | probe-level retention tuning |
+| 8 | **Agent misuse of verdicts** (treats `collateral, low-confidence` as license to proceed) | Med | High | verdict schema forces status+confidence together; agent-facing docs prescribe escalation defaults; `uncertain ⇒ surface to human` baked into the summary text | verdict "policy profiles" (strict/lenient) emitted per config |
+| 9 | **Scope creep toward AI code review** (pressure to opine on code quality) | Med | Med | non-goals in README; ADR required for scope changes; L1 as the review razor | — |
+| 10 | **Native dep (better-sqlite3) breakage** across Node versions/platforms | Low-Med | Med | prebuilt binaries; driver wrapped behind repository ports; WASM sqlite as fallback path | evaluate `node:sqlite` as it matures |
+| 11 | **Supply-chain compromise of KEEL itself** (auto-invoked by agents = high-value target) | Low | Critical | provenance-attested automated releases, no local artifact builds, signed tags, minimal deps (Doc 11 §7–8) | reproducible-build verification by third parties |
+| 12 | **Deep-runner maintenance burn** (Node internals churn: fetch internals, loader hooks) | Med | Med | interceptors individually versioned + fingerprinted; preload uses only documented injection points; capability degradation is graceful (falls back to process-boundary) | per-Node-major CI lanes |

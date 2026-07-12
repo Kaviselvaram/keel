@@ -1,0 +1,14 @@
+# KEEL — Open Source Strategy
+
+> Document 14 · Status: FROZEN — Architecture v1.0 (2026-07-12)
+
+| Area | Decision & rationale |
+|------|----------------------|
+| **License** | Apache-2.0 — patent grant matters for infrastructure adopted inside companies; MIT acceptable fallback; copyleft would kill agent-host bundling. |
+| **Repo standards** | Protected `main`, required review + CI (lint, depcruise, tests, determinism gate, zero-egress), conventional commits (feeds changelog automation), DCO sign-off (lighter than CLA; revisit CLA only if a foundation home is sought). |
+| **Contribution ladder** | `CONTRIBUTING.md` with an explicit map of this blueprint ("read Doc 01 before touching module boundaries"); `good-first-issue` seeded from the roadmap's leaf tasks; **runner plugins and heuristic classifier rules are the designed contribution surfaces** — bounded, contract-tested, high-value, low-blast-radius. Normalization rules for new output formats are the third. Core engine changes require an ADR. |
+| **Versioning** | SemVer with three *independently versioned public contracts*, each with its own compat tests: (1) CLI/MCP surface, (2) `@keel/runner-sdk`, (3) on-disk store schema. Pre-1.0: minor = breaking allowed but changelogged with migration notes. 1.0 is declared when the determinism gate has held for a full minor cycle and the store schema survives a version round-trip. |
+| **Release process** | Changesets-driven; every release: full matrix CI → npm publish with provenance → signed tag → GitHub release with generated notes. No human builds artifacts locally (supply chain, Doc 11 §8). Cadence: minor monthly-ish, patch on demand. |
+| **Documentation** | Four audiences, four trees (Doc 03 §2): user guides (task-oriented: "add KEEL to your agent in 5 minutes", "writing good probes" — the make-or-break doc), reference (generated from schemas: config, verdict format, MCP tools — never hand-drifted), contributor internals, this architecture set + append-only ADRs. |
+| **Examples & demo** | `examples/` are executable and CI-smoked (rotting examples are worse than none). Flagship demo, scripted end-to-end: agent introduces a subtle collateral regression (e.g., changes a shared date formatter while fixing an unrelated bug) → `keel_check` catches it → classifier labels it collateral with the code-diff rationale → agent fixes before the human ever sees it. That 90-second loop *is* the pitch; invest in it like a feature. A `keel init` that reaches first-verdict in under 3 minutes on a real repo is the adoption funnel. |
+| **Community posture** | Public roadmap issues mirroring Doc 17; monthly maintainer notes; SECURITY.md with private disclosure channel; explicit non-goals list in README to keep issue triage sane (the "please add cloud sync" ticket gets a link, not a debate). |

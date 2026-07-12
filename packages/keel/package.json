@@ -1,0 +1,38 @@
+{
+  "name": "keel",
+  "version": "0.0.1",
+  "description": "Local-first regression oracle for AI coding agents. The runtime determines truth; a local LLM only explains it.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "keel": "./dist/cli/main.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "!dist/**/__tests__"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaviselvaram/keel.git"
+  },
+  "keywords": [
+    "regression",
+    "oracle",
+    "mcp",
+    "ai-agents",
+    "local-first",
+    "testing"
+  ]
+}

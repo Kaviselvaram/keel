@@ -1,0 +1,140 @@
+/**
+ * KEEL dependency rules — machine encoding of Architecture v1.0, Doc 21 §1.
+ *
+ * Rules cite the Engineering Constitution (Doc 22) law they enforce.
+ * Rules for modules that do not exist yet are included deliberately: the gate
+ * must be complete before the code arrives (Doc 24, Phase 0).
+ * Adding or relaxing an edge requires an ADR (C20).
+ */
+
+/** The two composition roots are the only files allowed to wire ports to implementations (C27). */
+const COMPOSITION_ROOTS = '^packages/keel/src/(cli|mcp)/main\\.ts$';
+
+module.exports = {
+  forbidden: [
+    {
+      name: 'no-circular',
+      comment: 'C19: no circular dependencies at file granularity',
+      severity: 'error',
+      from: {},
+      to: { circular: true },
+    },
+    {
+      name: 'model-imports-nothing',
+      comment: 'C21: model/ imports nothing, not even shared/',
+      severity: 'error',
+      from: { path: '^packages/keel/src/model' },
+      to: { path: '^packages/keel/src/(?!model)' },
+    },
+    {
+      name: 'shared-is-leaf',
+      comment: 'C28: shared/ may not import any other module',
+      severity: 'error',
+      from: { path: '^packages/keel/src/shared' },
+      to: { path: '^packages/keel/src/(?!shared)' },
+    },
+    {
+      name: 'observability-is-leaf',
+      comment: 'Doc 21: observability depends on shared only',
+      severity: 'error',
+      from: { path: '^packages/keel/src/observability' },
+      to: { path: '^packages/keel/src/(?!observability|shared)' },
+    },
+    {
+      name: 'diff-is-pure',
+      comment: 'C8: diff imports model only — no I/O, no logging, no config',
+      severity: 'error',
+      from: { path: '^packages/keel/src/diff' },
+      to: { path: '^packages/keel/src/(?!diff|model)' },
+    },
+    {
+      name: 'inference-only-from-classify',
+      comment: 'C25: only classify/ (and composition roots) may import inference/',
+      severity: 'error',
+      from: {
+        path: '^packages/keel/src',
+        pathNot: `^packages/keel/src/(classify|inference)|${COMPOSITION_ROOTS}`,
+      },
+      to: { path: '^packages/keel/src/inference' },
+    },
+    {
+      name: 'inference-is-domain-blind',
+      comment: 'Doc 20 §7: inference knows nothing domain-shaped',
+      severity: 'error',
+      from: { path: '^packages/keel/src/inference' },
+      to: { path: '^packages/keel/src/(?!inference|shared|observability)' },
+    },
+    {
+      name: 'deterministic-core-cannot-see-ai',
+      comment: 'C24: capture/replay/diff/execution never import classify or inference',
+      severity: 'error',
+      from: { path: '^packages/keel/src/(capture|replay|diff|execution)' },
+      to: { path: '^packages/keel/src/(classify|inference)' },
+    },
+    {
+      name: 'adapters-through-services-only',
+      comment: 'C26: no business logic in transport adapters; composition roots exempt (C27)',
+      severity: 'error',
+      from: {
+        path: '^packages/keel/src/(mcp|cli)',
+        pathNot: COMPOSITION_ROOTS,
+      },
+      to: { path: '^packages/keel/src/(capture|replay|diff|execution|storage|classify|inference|config)' },
+    },
+    {
+      name: 'services-not-adapters',
+      comment: 'Doc 21: dependency inversion — adapters depend on services, never the reverse',
+      severity: 'error',
+      from: { path: '^packages/keel/src/services' },
+      to: { path: '^packages/keel/src/(mcp|cli)' },
+    },
+    {
+      name: 'storage-is-leaf',
+      comment: 'Doc 20 §8: storage implements consumer-owned ports; imports model/observability/shared only',
+      severity: 'error',
+      from: { path: '^packages/keel/src/storage' },
+      to: { path: '^packages/keel/src/(?!storage|model|observability|shared)' },
+    },
+    {
+      name: 'config-is-leaf',
+      comment: 'Doc 20 §9: config depends on model and shared only',
+      severity: 'error',
+      from: { path: '^packages/keel/src/config' },
+      to: { path: '^packages/keel/src/(?!config|model|shared)' },
+    },
+    {
+      name: 'execution-is-isolated',
+      comment: 'Doc 20 §2: execution imports model/observability/shared (+ runner-sdk) only',
+      severity: 'error',
+      from: { path: '^packages/keel/src/execution' },
+      to: { path: '^packages/keel/src/(?!execution|model|observability|shared)' },
+    },
+    {
+      name: 'capture-replay-forbidden-edges',
+      comment: 'Doc 21: capture/replay use ports; never adapters, services, config, diff, or AI',
+      severity: 'error',
+      from: { path: '^packages/keel/src/(capture|replay)' },
+      to: { path: '^packages/keel/src/(mcp|cli|services|config|diff|classify|inference|storage)' },
+    },
+    {
+      name: 'classify-forbidden-edges',
+      comment: 'Doc 20 §6: classify receives evidence and returns annotations; no storage, no execution',
+      severity: 'error',
+      from: { path: '^packages/keel/src/classify' },
+      to: { path: '^packages/keel/src/(storage|execution|capture|replay|mcp|cli|services)' },
+    },
+    {
+      name: 'runner-sdk-standalone',
+      comment: 'C31: the SDK never imports the keel package (one-way plugin boundary)',
+      severity: 'error',
+      from: { path: '^packages/runner-sdk' },
+      to: { path: '^packages/keel' },
+    },
+  ],
+  options: {
+    doNotFollow: { path: 'node_modules' },
+    exclude: { path: '(^|/)(dist|node_modules)/' },
+    // All KEEL-internal imports are relative (Doc 23) — no tsconfig paths to resolve.
+    tsPreCompilationDeps: true,
+  },
+};

@@ -1,13 +1,33 @@
 /**
- * @keel/runner-sdk — the public contract for KEEL runner plugins.
- *
- * Phase 0 scaffold (Architecture v1.0, Doc 24): the package exists in the
- * workspace from day one because the Node deep runner (Phase 2/7) consumes
- * these types across a real package boundary.
- *
- * The Runner port, Observation schemas, capability descriptors, and the
- * contract-test kit are defined in Phase 2 per Doc 20 §15. This module is
- * deliberately dependency-free and never imports the `keel` package (C31).
+ * @keel/runner-sdk — the public contract for KEEL runner plugins
+ * (Doc 20 §15). Dependency-free; never imports the keel package (C31).
  */
 
-export const RUNNER_SDK_VERSION = '0.0.1';
+export { RUNNER_SDK_VERSION, PROTOCOL_VERSION } from './versions.js';
+
+export { INTERCEPTOR_CAPABILITIES, negotiateCapabilities } from './capabilities.js';
+export type {
+  InterceptorCapability,
+  SupportedPlatform,
+  RunnerCapabilities,
+  NegotiationResult,
+  NegotiationSuccess,
+  NegotiationFailure,
+} from './capabilities.js';
+
+export type {
+  ExecutionRequest,
+  ExecutionLimits,
+  ExecutionMode,
+  RawStdin,
+  PlannedFile,
+  SpawnPlan,
+  RawExit,
+  StreamName,
+  StreamChunk,
+} from './execution.js';
+
+export type { Runner } from './runner.js';
+
+export { runnerContractChecks, referenceRequest } from './contract-kit.js';
+export type { ContractCheck } from './contract-kit.js';

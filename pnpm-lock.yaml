@@ -33,7 +33,11 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@26.1.1)(vite@8.1.4(@types/node@26.1.1))
 
-  packages/keel: {}
+  packages/keel:
+    dependencies:
+      '@keel/runner-sdk':
+        specifier: workspace:*
+        version: link:../runner-sdk
 
   packages/runner-sdk: {}
 

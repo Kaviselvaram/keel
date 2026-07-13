@@ -30,3 +30,7 @@ Blueprint authored from the product vision. Major positions taken vs. the origin
 **New at freeze:** module contracts (Doc 20), frozen dependency matrix (Doc 21), 75-law Engineering Constitution (Doc 22), implementation standards (Doc 23), per-phase playbooks (Doc 24), quality gates (Doc 25), certification (Doc 26), master index (/ARCHITECTURE.md).
 
 **Post-freeze rule:** changes to Docs 00–25 require a freeze-amendment ADR; this changelog records every amendment.
+
+## Post-freeze amendments
+
+- **2026-07-13 · ADR-017 (Proposed):** Windows group-kill mechanism changed from Job Objects (Doc 05 §3, Doc 24 P2) to process-tree termination via `taskkill /T /F`. Raised during Phase 2: Job Objects require a native addon, conflicting with the frozen native-dependency budget (Doc 11 §7). The zero-orphans acceptance criterion is unchanged and CI-verified on all tier-1 platforms.

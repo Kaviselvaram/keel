@@ -23,6 +23,9 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
+  "dependencies": {
+    "@keel/runner-sdk": "workspace:*"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Kaviselvaram/keel.git"

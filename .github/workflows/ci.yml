@@ -68,6 +68,18 @@ jobs:
             exit 1
           fi
           echo "model purity gate fired as expected"
+          rm packages/keel/src/model/gate-selftest-violation.ts
+      - name: Inject forbidden import (execution -> cli, violates execution isolation)
+        run: |
+          printf "import '../cli/args.js';\nexport {};\n" \
+            > packages/keel/src/execution/gate-selftest-violation.ts
+      - name: Expect depcruise to fail on execution isolation violation
+        run: |
+          if pnpm depcruise; then
+            echo "::error::dependency gate FAILED TO FIRE on an execution isolation violation"
+            exit 1
+          fi
+          echo "execution isolation gate fired as expected"
 
   matrix:
     name: Full matrix (${{ matrix.os }}, node ${{ matrix.node }})

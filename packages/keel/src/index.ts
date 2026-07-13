@@ -8,3 +8,4 @@
 export * from './shared/index.js';
 export * from './observability/index.js';
 export * from './model/index.js';
+export * from './execution/index.js';

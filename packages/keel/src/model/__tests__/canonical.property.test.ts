@@ -30,7 +30,10 @@ describe('canonical serialization — properties (L4)', () => {
       fc.property(
         fc.dictionary(fc.string(), jsonValue(), { maxKeys: 12 }),
         (record) => {
-          const reversed: Record<string, unknown> = {};
+          // Null-prototype target: plain assignment of a '__proto__' key on a
+          // normal object sets the prototype instead of an own property and
+          // silently drops the entry (caught by CI on a fast-check seed).
+          const reversed: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
           for (const key of Object.keys(record).reverse()) reversed[key] = record[key];
           let forward: string;
           try {
@@ -117,5 +120,20 @@ describe('canonical serialization — rejections', () => {
   it('canonicalizes -0 to 0 and shares its hash', () => {
     expect(canonicalSerialize(-0)).toBe('0');
     expect(contentHashOf({ n: -0 })).toBe(contentHashOf({ n: 0 }));
+  });
+
+  it("serializes an own '__proto__' property and accepts null-prototype objects (CI regression)", () => {
+    const withProtoKey = Object.defineProperty({}, '__proto__', {
+      value: false,
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+    expect(canonicalSerialize(withProtoKey)).toBe('{"__proto__":false}');
+
+    const nullProto: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+    nullProto['__proto__'] = false;
+    nullProto['a'] = 1;
+    expect(canonicalSerialize(nullProto)).toBe('{"__proto__":false,"a":1}');
   });
 });

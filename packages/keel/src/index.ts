@@ -1,10 +1,10 @@
 /**
- * keel — public library surface, Phase 0.
+ * keel — public library surface.
  *
- * Exposes the leaf utilities (shared, observability). Engine surfaces are
- * added by their phases; this file re-exports module indexes only (Doc 23
- * import conventions).
+ * Re-exports module indexes only (Doc 23 import conventions). Engine
+ * surfaces are added by their phases.
  */
 
 export * from './shared/index.js';
 export * from './observability/index.js';
+export * from './model/index.js';

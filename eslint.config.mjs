@@ -15,7 +15,10 @@ export default tseslint.config(
       'no-console': 'error',
       // Doc 23 import conventions
       '@typescript-eslint/consistent-type-imports': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true },
+      ],
     },
   },
   {
@@ -23,6 +26,17 @@ export default tseslint.config(
     files: ['packages/keel/src/cli/**'],
     rules: {
       'no-console': 'off',
+    },
+  },
+  {
+    // Operational scripts (Doc 03): plain Node ESM with runtime globals; console is their output device.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        URL: 'readonly',
+      },
     },
   },
   {

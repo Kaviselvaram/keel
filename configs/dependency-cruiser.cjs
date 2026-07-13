@@ -27,6 +27,13 @@ module.exports = {
       to: { path: '^packages/keel/src/(?!model)' },
     },
     {
+      name: 'model-no-npm',
+      comment: 'Doc 20 §1: model dependency budget is platform stdlib only — npm packages banned (tests exempt)',
+      severity: 'error',
+      from: { path: '^packages/keel/src/model', pathNot: '__tests__' },
+      to: { dependencyTypes: ['npm', 'npm-dev', 'npm-optional', 'npm-peer', 'npm-bundled', 'npm-no-pkg'] },
+    },
+    {
       name: 'shared-is-leaf',
       comment: 'C28: shared/ may not import any other module',
       severity: 'error',
@@ -132,8 +139,10 @@ module.exports = {
     },
   ],
   options: {
+    // doNotFollow (not exclude): npm modules stay visible as edge targets so
+    // the model-no-npm rule can see them; only built output is fully excluded.
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '(^|/)(dist|node_modules)/' },
+    exclude: { path: '(^|/)dist/' },
     // All KEEL-internal imports are relative (Doc 23) — no tsconfig paths to resolve.
     tsPreCompilationDeps: true,
   },

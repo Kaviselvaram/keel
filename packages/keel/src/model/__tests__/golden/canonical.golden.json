@@ -1,0 +1,169 @@
+{
+  "canonicalFormVersion": 1,
+  "cases": [
+    {
+      "name": "empty object",
+      "input": {},
+      "canonical": "{}",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "name": "empty array",
+      "input": [],
+      "canonical": "[]",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "null and booleans",
+      "input": [
+        null,
+        true,
+        false
+      ],
+      "canonical": "[null,true,false]",
+      "sha256": "37257214f22b92121c5ff4d7e29ed2d31b3f1129ee698e96e581ec05cb2e3cf7"
+    },
+    {
+      "name": "unsorted keys",
+      "input": {
+        "zebra": 1,
+        "alpha": {
+          "nested": [
+            2,
+            3
+          ],
+          "aardvark": null
+        },
+        "mike": true
+      },
+      "canonical": "{\"alpha\":{\"aardvark\":null,\"nested\":[2,3]},\"mike\":true,\"zebra\":1}",
+      "sha256": "8089ddb41d4739dd98464c3e6417ffddd581cdbd33f41deebd66648b771be35d"
+    },
+    {
+      "name": "numbers",
+      "input": [
+        0,
+        0,
+        1,
+        -3.14,
+        0.1,
+        1e+21,
+        1e-7,
+        9007199254740991,
+        123456789.123
+      ],
+      "canonical": "[0,0,1,-3.14,0.1,1e+21,1e-7,9007199254740991,123456789.123]",
+      "sha256": "486139fdf308a25ea6bb0d42cb7eb89e2433eeeac4019fe2a55fbfd14fad128a"
+    },
+    {
+      "name": "unicode composed",
+      "input": {
+        "text": "élève café ☃ 🚀"
+      },
+      "canonical": "{\"text\":\"élève café ☃ 🚀\"}",
+      "sha256": "d6c533ec33fcb8eb4eb17fce1002d1b3509329ab6265ce39ca56fb24af617307"
+    },
+    {
+      "name": "unicode decomposed normalizes",
+      "input": {
+        "text": "élève café ☃ 🚀"
+      },
+      "canonical": "{\"text\":\"élève café ☃ 🚀\"}",
+      "sha256": "d6c533ec33fcb8eb4eb17fce1002d1b3509329ab6265ce39ca56fb24af617307"
+    },
+    {
+      "name": "string escapes",
+      "input": "quote \" backslash \\ newline \n tab \t nul \u0000 del ",
+      "canonical": "\"quote \\\" backslash \\\\ newline \\n tab \\t nul \\u0000 del \"",
+      "sha256": "8b80bed5d69c6dbac49bcdf1cb1f833b571bb8742260341f0a8243374bf038a3"
+    },
+    {
+      "name": "lone surrogate",
+      "input": "broken \ud800 pair",
+      "canonical": "\"broken \\ud800 pair\"",
+      "sha256": "69aecfdcf0aeed76f566b2f3afc10621f756d21cac5f6b8f137b4c821a4119ce"
+    },
+    {
+      "name": "unicode keys sorted after NFC",
+      "input": {
+        "kéy": 1,
+        "kex": 2,
+        "kez": 3
+      },
+      "canonical": "{\"kex\":2,\"kez\":3,\"kéy\":1}",
+      "sha256": "5b83a01ff77eaff6f58af3eaffdf7f89b187104b3bc94e9853736bbf315b09e1"
+    },
+    {
+      "name": "deep nesting",
+      "input": {
+        "a": {
+          "b": {
+            "c": {
+              "d": {
+                "e": [
+                  {
+                    "f": [
+                      [
+                        [
+                          1
+                        ]
+                      ]
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "canonical": "{\"a\":{\"b\":{\"c\":{\"d\":{\"e\":[{\"f\":[[[1]]]}]}}}}}",
+      "sha256": "29e61eade2e8f1d6fd6ef3d400d562650637cb2b2bf25950a464ff542164cb1b"
+    },
+    {
+      "name": "undefined entries omitted",
+      "input": {
+        "keep": 1
+      },
+      "canonical": "{\"keep\":1}",
+      "sha256": "6675aa53127d6ad68fb4f47a8eeced07aebe9552f14b8d4795ca44de47eb56cd"
+    },
+    {
+      "name": "probe-shaped document",
+      "input": {
+        "schemaVersion": 1,
+        "name": "api-list-users",
+        "runner": "command",
+        "captureMode": "process",
+        "invocation": {
+          "command": "node",
+          "args": [
+            "server.js",
+            "--once"
+          ],
+          "cwd": ".",
+          "stdin": {
+            "kind": "none"
+          },
+          "envAllowlist": [
+            "PATH"
+          ]
+        },
+        "interception": {
+          "clock": "virtual",
+          "rng": "seeded",
+          "network": "record"
+        },
+        "limits": {
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "maxFsEffectBytes": 1048576
+        },
+        "hooks": {},
+        "ignoreRules": [],
+        "serial": false
+      },
+      "canonical": "{\"captureMode\":\"process\",\"hooks\":{},\"ignoreRules\":[],\"interception\":{\"clock\":\"virtual\",\"network\":\"record\",\"rng\":\"seeded\"},\"invocation\":{\"args\":[\"server.js\",\"--once\"],\"command\":\"node\",\"cwd\":\".\",\"envAllowlist\":[\"PATH\"],\"stdin\":{\"kind\":\"none\"}},\"limits\":{\"maxFsEffectBytes\":1048576,\"maxOutputBytes\":1048576,\"timeoutMs\":30000},\"name\":\"api-list-users\",\"runner\":\"command\",\"schemaVersion\":1,\"serial\":false}",
+      "sha256": "ee8308451a9b85b050bf7081487a3612715b940b5a40dea99c9d187762361867"
+    }
+  ]
+}

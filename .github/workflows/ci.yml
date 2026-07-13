@@ -56,6 +56,18 @@ jobs:
             exit 1
           fi
           echo "gate fired as expected"
+          rm packages/keel/src/shared/gate-selftest-violation.ts
+      - name: Inject forbidden import (model -> shared, violates C21)
+        run: |
+          printf "import '../shared/index.js';\nexport {};\n" \
+            > packages/keel/src/model/gate-selftest-violation.ts
+      - name: Expect depcruise to fail on model purity violation
+        run: |
+          if pnpm depcruise; then
+            echo "::error::dependency gate FAILED TO FIRE on a model purity violation"
+            exit 1
+          fi
+          echo "model purity gate fired as expected"
 
   matrix:
     name: Full matrix (${{ matrix.os }}, node ${{ matrix.node }})

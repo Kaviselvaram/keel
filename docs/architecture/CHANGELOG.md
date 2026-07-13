@@ -34,3 +34,4 @@ Blueprint authored from the product vision. Major positions taken vs. the origin
 ## Post-freeze amendments
 
 - **2026-07-13 · ADR-017 (Proposed):** Windows group-kill mechanism changed from Job Objects (Doc 05 §3, Doc 24 P2) to process-tree termination via `taskkill /T /F`. Raised during Phase 2: Job Objects require a native addon, conflicting with the frozen native-dependency budget (Doc 11 §7). The zero-orphans acceptance criterion is unchanged and CI-verified on all tier-1 platforms.
+- **2026-07-13 · ADR-018 (Proposed):** CAS compression changed from zstd (Doc 08, Doc 24 P3) to built-in gzip with per-object encoding recorded. Raised during Phase 3: zlib zstd requires Node ≥23.8 (floor is 20) and a native binding violates the dependency budget. Hashes cover uncompressed content, so the change (and any future zstd addition) can never affect object identity.

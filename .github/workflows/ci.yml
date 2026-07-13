@@ -28,8 +28,9 @@ jobs:
       - run: pnpm lint
       - run: pnpm depcruise
       - run: pnpm typecheck
-      - run: pnpm test
+      # Build precedes test: crash-injection tests spawn children that import the built dist.
       - run: pnpm build
+      - run: pnpm test
 
   gate-selftest:
     # Doc 24 Phase 0 acceptance: a deliberate forbidden import must fail CI.
@@ -80,6 +81,18 @@ jobs:
             exit 1
           fi
           echo "execution isolation gate fired as expected"
+          rm packages/keel/src/execution/gate-selftest-violation.ts
+      - name: Inject forbidden import (sqlite outside storage, violates C36)
+        run: |
+          printf "import Database from 'better-sqlite3';\nexport const t = typeof Database;\n" \
+            > packages/keel/src/cli/gate-selftest-violation.ts
+      - name: Expect depcruise to fail on sqlite-outside-storage violation
+        run: |
+          if pnpm depcruise; then
+            echo "::error::dependency gate FAILED TO FIRE on sqlite outside storage"
+            exit 1
+          fi
+          echo "sqlite containment gate fired as expected"
 
   matrix:
     name: Full matrix (${{ matrix.os }}, node ${{ matrix.node }})
@@ -100,7 +113,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - run: pnpm test
       - run: pnpm build
+      - run: pnpm test
       - name: Smoke the CLI
         run: node packages/keel/dist/cli/main.js --version

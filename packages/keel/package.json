@@ -24,7 +24,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@keel/runner-sdk": "workspace:*"
+    "@keel/runner-sdk": "workspace:*",
+    "better-sqlite3": "^12.11.1"
   },
   "repository": {
     "type": "git",
@@ -37,5 +38,8 @@
     "ai-agents",
     "local-first",
     "testing"
-  ]
+  ],
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13"
+  }
 }

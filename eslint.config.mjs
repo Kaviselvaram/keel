@@ -29,8 +29,8 @@ export default tseslint.config(
     },
   },
   {
-    // Operational scripts (Doc 03): plain Node ESM with runtime globals; console is their output device.
-    files: ['scripts/**/*.mjs'],
+    // Operational scripts (Doc 03) and plain-JS test fixtures: Node ESM with runtime globals.
+    files: ['scripts/**/*.mjs', 'packages/**/__tests__/fixtures/**/*.mjs'],
     languageOptions: {
       globals: {
         console: 'readonly',

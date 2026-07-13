@@ -131,6 +131,13 @@ module.exports = {
       to: { path: '^packages/keel/src/(storage|execution|capture|replay|mcp|cli|services)' },
     },
     {
+      name: 'sqlite-only-in-storage',
+      comment: 'C36: SQLite is never accessed outside storage/ repositories',
+      severity: 'error',
+      from: { path: '^packages/(keel|runner-sdk)/src', pathNot: '^packages/keel/src/storage' },
+      to: { path: 'better-sqlite3' },
+    },
+    {
       name: 'runner-sdk-standalone',
       comment: 'C31: the SDK never imports the keel package (one-way plugin boundary)',
       severity: 'error',

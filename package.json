@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "depcruise": "depcruise packages --config configs/dependency-cruiser.cjs",
     "test": "vitest run",
-    "verify": "pnpm lint && pnpm depcruise && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm lint && pnpm depcruise && pnpm typecheck && pnpm build && pnpm test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

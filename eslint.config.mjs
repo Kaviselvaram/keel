@@ -30,7 +30,7 @@ export default tseslint.config(
   },
   {
     // Operational scripts (Doc 03) and plain-JS test fixtures: Node ESM with runtime globals.
-    files: ['scripts/**/*.mjs', 'packages/**/__tests__/fixtures/**/*.mjs'],
+    files: ['scripts/**/*.mjs', 'packages/**/__tests__/fixtures/**/*.mjs', 'examples/**/*.mjs'],
     languageOptions: {
       globals: {
         console: 'readonly',

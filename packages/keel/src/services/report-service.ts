@@ -9,7 +9,7 @@
 import { UserError } from '../shared/index.js';
 import type { Clock } from '../shared/index.js';
 import type { Logger } from '../observability/index.js';
-import type { Divergence, EntityId, Suppression, Verdict } from '../model/index.js';
+import type { Annotation, ContentHash, Divergence, EntityId, Suppression, Verdict } from '../model/index.js';
 import { expireSuppression, formatDivergencePath } from '../model/index.js';
 import type { KeelStore } from '../storage/index.js';
 
@@ -96,4 +96,64 @@ export class ReportService {
       unsuppressedCount: divergences.filter((entry) => entry.suppressedBy === null).length,
     };
   }
+
+  /**
+   * Deep detail for one divergence (the keel_explain use case, Doc 09 §3):
+   * the fact, retrievable values, suppression state, prior annotations.
+   * Searches the given verdict or the most recent ones.
+   */
+  async explain(stableId: ContentHash, verdictId?: EntityId): Promise<ExplainReport> {
+    const candidates =
+      verdictId !== undefined ? [verdictId] : this.options.store.verdicts.listRecentIds(20);
+    for (const id of candidates) {
+      const report = await this.report(id);
+      const entry = report.divergences.find((d) => d.divergence.stableId === stableId);
+      if (entry === undefined) continue;
+      return {
+        schemaVersion: 1,
+        verdictId: report.verdict.id,
+        divergence: entry.divergence,
+        formattedPath: entry.formattedPath,
+        suppressedBy: entry.suppressedBy,
+        annotations: report.verdict.annotations.filter(
+          (annotation) => annotation.divergenceStableId === stableId,
+        ),
+        baselineValue: await this.retrieveValue(entry.divergence.baselineValueRef),
+        candidateValue: await this.retrieveValue(entry.divergence.candidateValueRef),
+      };
+    }
+    throw new UserError(`divergence '${stableId}' not found in recent verdicts`, {
+      code: 'KEEL_E_REPORT_DIVERGENCE_NOT_FOUND',
+      remediation: 'pass the verdictId from the keel_check result the stableId came from',
+      context: { stableId },
+    });
+  }
+
+  /** Whole-stream refs are real CAS objects; leaf refs are identities only (v1). */
+  private async retrieveValue(ref: ContentHash | null): Promise<ExplainedValue> {
+    if (ref === null) return { present: false, reason: 'no-value-on-this-side' };
+    try {
+      const bytes = await this.options.store.objects.get(ref);
+      return { present: true, ref, text: new TextDecoder().decode(bytes) };
+    } catch {
+      return { present: false, reason: 'value-ref-not-materialized', ref };
+    }
+  }
+}
+
+/** A retrievable-or-identified divergence value (Doc 09 §3 keel_explain). */
+export type ExplainedValue =
+  | { readonly present: true; readonly ref: ContentHash; readonly text: string }
+  | { readonly present: false; readonly reason: string; readonly ref?: ContentHash };
+
+/** The keel_explain result document. */
+export interface ExplainReport {
+  readonly schemaVersion: 1;
+  readonly verdictId: EntityId;
+  readonly divergence: Divergence;
+  readonly formattedPath: string;
+  readonly suppressedBy: string | null;
+  readonly annotations: readonly Annotation[];
+  readonly baselineValue: ExplainedValue;
+  readonly candidateValue: ExplainedValue;
 }

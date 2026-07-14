@@ -131,6 +131,18 @@ jobs:
             exit 1
           fi
           echo "diff purity gate fired as expected"
+          rm packages/keel/src/diff/gate-selftest-violation.ts
+      - name: Inject forbidden import (services -> mcp, violates adapter direction)
+        run: |
+          printf "import '../mcp/index.js';\nexport {};\n" \
+            > packages/keel/src/services/gate-selftest-violation.ts
+      - name: Expect depcruise to fail on mcp import outside the CLI composition root
+        run: |
+          if pnpm depcruise; then
+            echo "::error::dependency gate FAILED TO FIRE on mcp adapter isolation"
+            exit 1
+          fi
+          echo "mcp adapter isolation gate fired as expected"
 
   matrix:
     name: Full matrix (${{ matrix.os }}, node ${{ matrix.node }})

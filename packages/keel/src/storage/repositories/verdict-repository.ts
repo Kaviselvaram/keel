@@ -105,6 +105,15 @@ export class SqliteVerdictRepository {
     return document;
   }
 
+  /** Most recent verdict ids, newest first (keel_explain's default search space). */
+  listRecentIds(limit: number): readonly EntityId[] {
+    return (
+      this.db
+        .prepare('SELECT id FROM verdicts ORDER BY created_at DESC, id DESC LIMIT ?')
+        .all(limit) as { id: string }[]
+    ).map((row) => row.id);
+  }
+
   listByBaseline(baselineId: EntityId): readonly VerdictSummary[] {
     const rows = this.db
       .prepare(

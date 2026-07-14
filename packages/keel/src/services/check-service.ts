@@ -38,6 +38,11 @@ import type { ExecutionEngine } from '../execution/index.js';
 import type { KeelStore } from '../storage/index.js';
 import { compileRules, toResolvedProbes } from './probe-mapping.js';
 
+/** v1 scope resolution: sound over-approximation — 'diff' cannot prove any probe unaffected yet (Phase 12). */
+function resolveScope(scope: CheckCommand['scope']): readonly string[] | undefined {
+  return scope?.kind === 'probes' ? scope.names : undefined;
+}
+
 /** ADR-013 port: digest of the working tree, null when not applicable (not a git repo). */
 export type TreeDigest = () => Promise<string | null>;
 
@@ -54,6 +59,16 @@ export interface CheckCommand {
   /** Explicit baseline id, or resolution by label (ADR-012: latest sealed for the label). */
   readonly baselineId?: string;
   readonly label: string;
+  /**
+   * Probe scope (Doc 09 §3): 'diff' (default) runs probes plausibly affected
+   * by the current edit — v1 soundly over-approximates to ALL probes (no
+   * dependency map until Phase 12; this seam is where it lands); 'all'
+   * forces full replay explicitly; 'probes' names an exact subset.
+   */
+  readonly scope?:
+    | { readonly kind: 'diff' }
+    | { readonly kind: 'all' }
+    | { readonly kind: 'probes'; readonly names: readonly string[] };
   readonly gitCommit: string | null;
   readonly parentEnv: Readonly<Record<string, string | undefined>>;
   readonly signal: AbortSignal;
@@ -96,7 +111,7 @@ export class CheckService {
     try {
       const outcome = await replayEngine.replay({
         baseline,
-        probes: toResolvedProbes(command.config, undefined),
+        probes: toResolvedProbes(command.config, resolveScope(command.scope)),
         normalize: (result) => normalizeExecution(result, rules),
         currentConfigHash: command.config.configHash,
         currentRulesetVersion: RULESET_VERSION,

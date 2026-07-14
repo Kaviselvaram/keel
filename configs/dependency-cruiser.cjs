@@ -145,6 +145,13 @@ module.exports = {
       to: { path: 'better-sqlite3' },
     },
     {
+      name: 'mcp-only-from-cli-main',
+      comment: 'Doc 09 §2: the host spawns `keel mcp` — only the CLI composition root may import the MCP adapter',
+      severity: 'error',
+      from: { path: '^packages/keel/src', pathNot: `^packages/keel/src/mcp|${COMPOSITION_ROOTS}` },
+      to: { path: '^packages/keel/src/mcp' },
+    },
+    {
       name: 'runner-sdk-standalone',
       comment: 'C31: the SDK never imports the keel package (one-way plugin boundary)',
       severity: 'error',

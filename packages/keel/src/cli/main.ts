@@ -28,6 +28,7 @@ import {
   CheckService,
   ReportService,
 } from '../services/index.js';
+import { runMcpServer } from '../mcp/index.js';
 import { parseCli, USAGE } from './args.js';
 import { acquireGitProvenance, treeDigest } from './git-provenance.js';
 import { renderBaselines, renderCaptureResult, renderReport } from './render.js';
@@ -100,6 +101,25 @@ async function main(): Promise<number> {
       }
       writeFileSync(target, STARTER_CONFIG);
       console.log(`created ${target} — declare your probes, then run 'keel capture'`);
+      return EXIT_CODES.clean;
+    }
+    case 'mcp': {
+      // MCP session: logs go to the store dir; stdout belongs to the protocol.
+      const storeDir = process.env['KEEL_STORE_DIR'] ?? path.join(cwd, '.keel');
+      const logsDir = path.join(storeDir, 'logs');
+      mkdirSync(logsDir, { recursive: true });
+      const day = new Date().toISOString().slice(0, 10);
+      const sink = createWriteStream(path.join(logsDir, `keel-mcp-${day}.log`), { flags: 'a' });
+      await runMcpServer({
+        cwd,
+        env: process.env,
+        keelVersion: version,
+        logger: createNdjsonLogger({ sink: { write: (line) => void sink.write(line) } }),
+        input: process.stdin,
+        output: { write: (line) => void process.stdout.write(line) },
+        acquireGit: () => acquireGitProvenance(cwd),
+        treeDigest: () => treeDigest(cwd),
+      });
       return EXIT_CODES.clean;
     }
     default:

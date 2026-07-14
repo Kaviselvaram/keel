@@ -1,0 +1,132 @@
+{
+  "keelMcpSchemaVersion": "1.0.0",
+  "supportedProtocolVersions": [
+    "2025-06-18",
+    "2025-03-26",
+    "2024-11-05"
+  ],
+  "tools": [
+    {
+      "name": "keel_status",
+      "description": "Cheap pre-flight: is KEEL initialized here, which baselines exist and how fresh they are, how many probes are declared, whether classification is available. Call before capture/check.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "keel_capture",
+      "description": "Execute all (or named) probes, verify determinism, and seal a baseline. Destructive-ish: requires an explicit label. Returns the sealed baseline id and provenance, or a structured rejection naming the flapping path.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Baseline label (ADR-012: resolution key; convention is the git branch)"
+          },
+          "probes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Restrict to these probe names (all when omitted)"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "keel_check",
+      "description": "The oracle: replay the baseline, diff behavior, return the persisted verdict. Default scope is diff-scoped (sound over-approximation; the Phase 12 dependency map narrows it); pass all=true to force full replay. Domain outcomes (stale-baseline, no baseline, busy) are structured results, not errors.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Baseline label to resolve (default: current git branch)"
+          },
+          "baselineId": {
+            "type": "string",
+            "description": "Explicit baseline id (overrides label resolution)"
+          },
+          "all": {
+            "type": "boolean",
+            "description": "Force full replay instead of the diff-scoped default"
+          },
+          "probes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Explicit probe subset (overrides scoping)"
+          },
+          "classify": {
+            "type": "boolean",
+            "description": "Request advisory classification (unavailable until Phase 9; result notes it)"
+          },
+          "budgetMs": {
+            "type": "number",
+            "description": "Classification wall-clock budget (inert until Phase 9)"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "keel_explain",
+      "description": "Deep detail for one divergence by stableId: full baseline/candidate values where retrievable, suppression state, prior annotations. Keeps keel_check responses small.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stableId": {
+            "type": "string",
+            "description": "The divergence stableId from a keel_check result"
+          },
+          "verdictId": {
+            "type": "string",
+            "description": "Verdict to search (default: the most recent verdict)"
+          }
+        },
+        "required": [
+          "stableId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "keel_suppress",
+      "description": "Record \"this divergence is accepted\": append-only, reasoned. Filters presentation and CI exit semantics; the persisted facts are never altered. Absorbed automatically when a new baseline seals (ADR-014).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stableId": {
+            "type": "string",
+            "description": "Suppress this exact divergence (exclusive with pattern)"
+          },
+          "pattern": {
+            "type": "string",
+            "description": "Glob over formatted paths, e.g. 'stream:stdout/json:$.meta.*' (exclusive with stableId)"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this change is accepted (audit trail)"
+          },
+          "expiresInDays": {
+            "type": "number",
+            "description": "Optional expiry; absent means no expiry"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ]
+}

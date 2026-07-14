@@ -8,6 +8,7 @@ export type CliCommand =
   | { readonly kind: 'version' }
   | { readonly kind: 'help' }
   | { readonly kind: 'init' }
+  | { readonly kind: 'mcp' }
   | { readonly kind: 'capture'; readonly label?: string; readonly probes?: readonly string[] }
   | { readonly kind: 'check'; readonly baselineId?: string; readonly label?: string; readonly json: boolean }
   | { readonly kind: 'report'; readonly verdictId: string; readonly json: boolean }
@@ -28,6 +29,7 @@ Usage:
                [--json]
   keel baseline ls               List baselines
   keel baseline rm <id>          Remove a baseline (objects become GC-collectable)
+  keel mcp                       Serve the MCP stdio interface (agents; Doc 09)
   keel --version | --help
 
 Exit codes: 0 clean · 1 diverged · 2 user/stale · 3 environment · 4 internal
@@ -86,6 +88,8 @@ export function parseCli(argv: readonly string[]): CliCommand {
   switch (command) {
     case 'init':
       return { kind: 'init' };
+    case 'mcp':
+      return { kind: 'mcp' };
     case 'capture': {
       const probes = flags.get('--probe');
       return {

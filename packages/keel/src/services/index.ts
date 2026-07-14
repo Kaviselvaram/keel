@@ -11,9 +11,18 @@ export { CheckService } from './check-service.js';
 export type { CheckServiceOptions, CheckCommand, CheckOutcome, TreeDigest } from './check-service.js';
 
 export { ReportService } from './report-service.js';
-export type { ReportServiceOptions, CheckReport, ReportedDivergence } from './report-service.js';
+export type {
+  ReportServiceOptions,
+  CheckReport,
+  ReportedDivergence,
+  ExplainReport,
+  ExplainedValue,
+} from './report-service.js';
 
 export { BaselineAdminService } from './baseline-admin-service.js';
+
+export { SuppressionService } from './suppression-service.js';
+export type { SuppressCommand } from './suppression-service.js';
 
 export { toResolvedProbes, compileRules } from './probe-mapping.js';
 

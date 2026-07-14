@@ -93,6 +93,18 @@ jobs:
             exit 1
           fi
           echo "sqlite containment gate fired as expected"
+          rm packages/keel/src/cli/gate-selftest-violation.ts
+      - name: Inject forbidden import (capture -> storage, violates C22 ports pattern)
+        run: |
+          printf "import '../storage/index.js';\nexport {};\n" \
+            > packages/keel/src/capture/gate-selftest-violation.ts
+      - name: Expect depcruise to fail on capture-storage violation
+        run: |
+          if pnpm depcruise; then
+            echo "::error::dependency gate FAILED TO FIRE on capture importing storage"
+            exit 1
+          fi
+          echo "capture ports gate fired as expected"
 
   matrix:
     name: Full matrix (${{ matrix.os }}, node ${{ matrix.node }})

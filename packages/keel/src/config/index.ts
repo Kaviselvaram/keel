@@ -1,8 +1,18 @@
 /**
- * config/ — Configuration (Ring 2). Phase 3 ships only store-location
- * resolution; the full layered system (JSONC, hierarchy, ConfigSnapshot,
- * behavior hash) is Phase 4 per Doc 24.
+ * config/ — Configuration (Ring 2, Doc 20 §9): the only module that reads
+ * env vars or config files (C64). Everything downstream receives the frozen
+ * ConfigSnapshot.
  */
 
 export { resolveStoreDirectory } from './store-location.js';
 export type { StoreLocationInput } from './store-location.js';
+
+export { loadConfig } from './load.js';
+export type { LoadConfigOptions } from './load.js';
+
+export type {
+  ConfigSnapshot,
+  ProbeConfig,
+  NormalizationRuleConfig,
+  MachineConfig,
+} from './schema.js';

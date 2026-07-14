@@ -11,3 +11,5 @@ export * from './model/index.js';
 export * from './execution/index.js';
 export * from './storage/index.js';
 export * from './config/index.js';
+export * from './capture/index.js';
+export * from './services/index.js';

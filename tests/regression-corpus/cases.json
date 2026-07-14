@@ -1,0 +1,73 @@
+{
+  "description": "Regression corpus v0 (Doc 24 P5). Each case: capture v1, apply v2 as the code change, run keel's check pipeline, assert the verdict. Scripts are node -e bodies (cross-platform). 'expect.divergences' entries are kind@observation:locator.",
+  "cases": [
+    {
+      "name": "known-regression: leaf value change",
+      "v1": "console.log(JSON.stringify({price:10,currency:'EUR'}))",
+      "v2": "console.log(JSON.stringify({price:12,currency:'EUR'}))",
+      "expect": { "status": "diverged", "divergences": ["value-changed@stream:stdout/json:$.price"] }
+    },
+    {
+      "name": "known-regression: field removed",
+      "v1": "console.log(JSON.stringify({keep:1,legacy:true}))",
+      "v2": "console.log(JSON.stringify({keep:1}))",
+      "expect": { "status": "diverged", "divergences": ["entry-removed@stream:stdout/json:$.legacy"] }
+    },
+    {
+      "name": "known-regression: field added",
+      "v1": "console.log(JSON.stringify({keep:1}))",
+      "v2": "console.log(JSON.stringify({keep:1,fresh:'x'}))",
+      "expect": { "status": "diverged", "divergences": ["entry-added@stream:stdout/json:$.fresh"] }
+    },
+    {
+      "name": "known-regression: type change",
+      "v1": "console.log(JSON.stringify({count:5}))",
+      "v2": "console.log(JSON.stringify({count:'5'}))",
+      "expect": { "status": "diverged", "divergences": ["shape-changed@stream:stdout/json:$.count"] }
+    },
+    {
+      "name": "known-regression: identity-keyed reorder",
+      "v1": "console.log(JSON.stringify({items:[{id:1,n:'a'},{id:2,n:'b'}]}))",
+      "v2": "console.log(JSON.stringify({items:[{id:2,n:'b'},{id:1,n:'a'}]}))",
+      "expect": { "status": "diverged", "divergences": ["order-changed@stream:stdout/json:$.items"] }
+    },
+    {
+      "name": "known-regression: exit code change",
+      "v1": "console.log('ok');process.exit(0)",
+      "v2": "console.log('ok');process.exit(2)",
+      "expect": { "status": "diverged", "divergences": ["exit-changed@exit:outcome"] }
+    },
+    {
+      "name": "known-regression: the app hangs (probe-failed)",
+      "v1": "console.log(JSON.stringify({ready:true}))",
+      "v2": "setInterval(()=>{},1000)",
+      "probe": { "timeoutMs": 1500 },
+      "expectContains": { "status": "diverged", "kinds": ["probe-failed"] }
+    },
+    {
+      "name": "known-regression: stderr text change",
+      "v1": "console.error('boot: mode=fast');console.log('{}')",
+      "v2": "console.error('boot: mode=slow');console.log('{}')",
+      "expect": { "status": "diverged", "divergences": ["value-changed@stream:stderr/text"] }
+    },
+    {
+      "name": "acceptable change: volatile timestamp is normalized away",
+      "v1": "console.log(JSON.stringify({at:new Date().toISOString(),v:1}))",
+      "v2": "console.log(JSON.stringify({at:new Date(Date.now()+9999).toISOString(),v:1}))",
+      "expect": { "status": "clean", "divergences": [] }
+    },
+    {
+      "name": "acceptable change: ignored path absorbs churn",
+      "v1": "console.log(JSON.stringify({meta:{build:'a1'},data:42}))",
+      "v2": "console.log(JSON.stringify({meta:{build:'b2'},data:42}))",
+      "probe": { "ignoreRules": ["stream:stdout/json:$.meta.*"] },
+      "expect": { "status": "clean", "divergences": [] }
+    },
+    {
+      "name": "acceptable change: no change at all",
+      "v1": "console.log(JSON.stringify({stable:[1,2,3]}))",
+      "v2": "console.log(JSON.stringify({stable:[1,2,3]}))",
+      "expect": { "status": "clean", "divergences": [] }
+    }
+  ]
+}

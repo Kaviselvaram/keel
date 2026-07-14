@@ -1,0 +1,36 @@
+{
+  // KEEL dogfooding itself (Doc 24 P5: dogfooding begins; C75).
+  // Probes are self-contained: absolute paths arrive via env VALUES, which
+  // are never part of the probe spec hash — only the allowlisted NAMES are —
+  // so this config is committable and machine-portable by design.
+  "version": 1,
+  "probes": {
+    // The CLI's help surface: user-visible contract, must not drift silently.
+    "cli-help": {
+      "command": "node",
+      "args": [
+        "-e",
+        "const{execFileSync}=require('child_process');process.stdout.write(execFileSync(process.execPath,[process.env.KEEL_CLI,'--help'],{encoding:'utf8'}))"
+      ],
+      "env": ["KEEL_CLI"]
+    },
+    // The five-code exit contract for user errors (frozen, Doc 10 C2).
+    "cli-exit-contract": {
+      "command": "node",
+      "args": [
+        "-e",
+        "const{spawnSync}=require('child_process');const r=spawnSync(process.execPath,[process.env.KEEL_CLI,'definitely-not-a-command'],{encoding:'utf8'});console.log(JSON.stringify({exitCode:r.status,stderr:r.stderr.trim()}))"
+      ],
+      "env": ["KEEL_CLI"]
+    },
+    // The canonical serializer's observable behavior (golden bytes, live).
+    "canonical-serializer": {
+      "command": "node",
+      "args": [
+        "-e",
+        "import(process.env.KEEL_MODEL_URL).then(m=>console.log(m.canonicalSerialize({zebra:1,alpha:['é','é'],numbers:[0,-0,1e21,1e-7]})))"
+      ],
+      "env": ["KEEL_MODEL_URL"]
+    }
+  }
+}

@@ -31,6 +31,8 @@ jobs:
       # Build precedes test: crash-injection tests spawn children that import the built dist.
       - run: pnpm build
       - run: pnpm test
+      # Dogfooding (Doc 24 P5, C75): KEEL validates KEEL with its own config.
+      - run: node scripts/dogfood.mjs
 
   gate-selftest:
     # Doc 24 Phase 0 acceptance: a deliberate forbidden import must fail CI.
@@ -153,3 +155,5 @@ jobs:
       - run: pnpm test
       - name: Smoke the CLI
         run: node packages/keel/dist/cli/main.js --version
+      - name: Dogfood (KEEL validates KEEL)
+        run: node scripts/dogfood.mjs

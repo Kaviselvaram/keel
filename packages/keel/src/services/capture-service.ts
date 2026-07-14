@@ -10,17 +10,13 @@
  */
 
 import { UserError, ulid } from '../shared/index.js';
+import { absorbSuppression } from '../model/index.js';
 import type { Clock } from '../shared/index.js';
 import type { Logger } from '../observability/index.js';
 import type { ConfigSnapshot } from '../config/index.js';
-import { BUILTIN_RULES, CaptureEngine, makeRule } from '../capture/index.js';
-import type {
-  CaptureGitInfo,
-  CaptureProbe,
-  CaptureProgress,
-  CaptureResult,
-  NormalizationRule,
-} from '../capture/index.js';
+import { CaptureEngine } from '../capture/index.js';
+import type { CaptureGitInfo, CaptureProgress, CaptureResult } from '../capture/index.js';
+import { compileRules, toResolvedProbes } from './probe-mapping.js';
 import type { ExecutionEngine } from '../execution/index.js';
 import type { KeelStore } from '../storage/index.js';
 
@@ -42,51 +38,6 @@ export interface CaptureCommand {
   readonly parentEnv: Readonly<Record<string, string | undefined>>;
   readonly signal: AbortSignal;
   readonly onProgress?: (progress: CaptureProgress) => void;
-}
-
-function toCaptureProbes(
-  config: ConfigSnapshot,
-  filter: readonly string[] | undefined,
-): readonly CaptureProbe[] {
-  const names = Object.keys(config.probes);
-  const selected = filter === undefined ? names : filter;
-  const probes: CaptureProbe[] = [];
-  for (const name of selected) {
-    const probe = config.probes[name];
-    if (probe === undefined) {
-      throw new UserError(`unknown probe '${name}'`, {
-        code: 'KEEL_E_CAPTURE_UNKNOWN_PROBE',
-        remediation: `declared probes: ${names.join(', ') || '(none)'}`,
-        context: { name },
-      });
-    }
-    probes.push({
-      name,
-      runner: probe.runner,
-      command: probe.command,
-      args: probe.args,
-      cwd: probe.cwd,
-      stdinText: probe.stdin,
-      envAllowlist: probe.env,
-      timeoutMs: probe.timeoutMs,
-      maxOutputBytes: probe.maxOutputBytes,
-      maxFsEffectBytes: probe.maxFsEffectBytes,
-      interception: probe.interception,
-      hooks: probe.hooks,
-      ignoreRules: probe.ignoreRules,
-      serial: probe.serial,
-    });
-  }
-  return probes;
-}
-
-function compileRules(config: ConfigSnapshot): readonly NormalizationRule[] {
-  const userRules = config.normalizationRules.map((rule) =>
-    makeRule(rule.id, rule.pattern, rule.replacement),
-  );
-  // User rules run after secrets, before/alongside built-in volatiles;
-  // built-ins keep priority on secrets by ordering.
-  return [...BUILTIN_RULES, ...userRules];
 }
 
 export class CaptureService {
@@ -122,7 +73,7 @@ export class CaptureService {
     });
     const result = await engine.capture({
       label: command.label,
-      probes: toCaptureProbes(command.config, command.probeFilter),
+      probes: toResolvedProbes(command.config, command.probeFilter),
       rules: compileRules(command.config),
       configHash: command.config.configHash,
       keelVersion: this.options.keelVersion,
@@ -132,6 +83,16 @@ export class CaptureService {
       signal: command.signal,
       ...(command.onProgress === undefined ? {} : { onProgress: command.onProgress }),
     });
+    if (result.status === 'sealed') {
+      // ADR-014: the accepted changes are now the baseline — stable-id
+      // suppressions absorb; pattern suppressions remain active.
+      for (const suppression of await this.options.store.suppressions.listByStatus('active')) {
+        if (suppression.target.kind === 'stable-id') {
+          await this.options.store.suppressions.transition(absorbSuppression(suppression));
+          logger.info('capture.suppression.absorbed', { suppressionId: suppression.id });
+        }
+      }
+    }
     logger.info('capture.run.finish', {
       status: result.status,
       baselineId: result.baseline.id,

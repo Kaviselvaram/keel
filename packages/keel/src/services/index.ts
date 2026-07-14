@@ -30,3 +30,4 @@ export { toResolvedProbes, compileRules } from './probe-mapping.js';
 // import services only; these are the documents their projections render).
 export type { CaptureResult, CaptureProgress } from '../capture/index.js';
 export type { BaselineSummary } from '../storage/index.js';
+export type { ConfigSnapshot } from '../config/index.js';

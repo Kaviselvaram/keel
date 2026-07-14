@@ -10,10 +10,10 @@ import type {
   BaselineAdminService,
   CaptureService,
   CheckService,
+  ConfigSnapshot,
   ReportService,
   SuppressionService,
 } from '../services/index.js';
-import type { ConfigSnapshot } from '../config/index.js';
 import { KEEL_MCP_SCHEMA_VERSION } from './schemas.js';
 
 /** What a tool call runs against — constructed per call by the composition root, closed after. */

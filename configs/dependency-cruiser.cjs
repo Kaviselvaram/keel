@@ -117,11 +117,18 @@ module.exports = {
       to: { path: '^packages/keel/src/(?!execution|model|observability|shared)' },
     },
     {
-      name: 'capture-replay-forbidden-edges',
-      comment: 'Doc 21: capture/replay use ports; never adapters, services, config, diff, or AI',
+      name: 'capture-forbidden-edges',
+      comment: 'Doc 21: capture uses ports; never adapters, services, config, diff, replay, or AI',
       severity: 'error',
-      from: { path: '^packages/keel/src/(capture|replay)' },
-      to: { path: '^packages/keel/src/(mcp|cli|services|config|diff|classify|inference|storage)' },
+      from: { path: '^packages/keel/src/capture' },
+      to: { path: '^packages/keel/src/(mcp|cli|services|config|diff|replay|classify|inference|storage)' },
+    },
+    {
+      name: 'replay-forbidden-edges',
+      comment: 'Doc 21/Doc 20 §4: replay must not compare (diff), normalize directly (capture), or touch adapters/config/storage/AI',
+      severity: 'error',
+      from: { path: '^packages/keel/src/replay' },
+      to: { path: '^packages/keel/src/(mcp|cli|services|config|diff|capture|classify|inference|storage)' },
     },
     {
       name: 'classify-forbidden-edges',

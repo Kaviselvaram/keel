@@ -6,7 +6,7 @@
 
 import { UserError } from '../shared/index.js';
 import { contentHashOf } from '../model/index.js';
-import type { ContentHash } from '../model/index.js';
+import type { ContentHash, EnvironmentFingerprint } from '../model/index.js';
 import type { SupportedPlatform } from '@keel/runner-sdk';
 
 export interface PlatformInfo {
@@ -52,4 +52,23 @@ export interface ExecutionConditions {
 
 export function executionFingerprint(conditions: ExecutionConditions): ContentHash {
   return contentHashOf(conditions);
+}
+
+/**
+ * The current environment as a model EnvironmentFingerprint (Doc 05 §5,
+ * Doc 06 A4 incl. ICU): shared by capture (provenance) and replay
+ * (compatibility policy) so the two can never drift.
+ */
+export function currentEnvironmentFingerprint(
+  interceptorVersions: Readonly<Record<string, string>>,
+): EnvironmentFingerprint {
+  const platform = detectPlatform();
+  return {
+    os: platform.os,
+    arch: platform.arch,
+    runtimeName: platform.runtimeName,
+    runtimeVersion: platform.runtimeVersion,
+    icuVersion: process.versions.icu ?? 'none',
+    interceptorVersions: { ...interceptorVersions },
+  };
 }

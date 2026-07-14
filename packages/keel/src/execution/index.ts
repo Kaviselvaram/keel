@@ -21,3 +21,8 @@ export type { Workspace, WorkspaceOptions } from './workspace.js';
 
 export { scanManifest, diffManifests } from './manifest.js';
 export type { Manifest, ManifestEntry, RawFsEvent } from './manifest.js';
+
+export { toProbeSpec, toExecutionRequest, hookExecutionRequest, requiredInterceptors } from './probe-plan.js';
+export type { ResolvedProbe } from './probe-plan.js';
+
+export { currentEnvironmentFingerprint } from './platform.js';

@@ -1,0 +1,7 @@
+# `diff/` — Diff Engine (Ring 1, pure)
+
+Contract: [Doc 20 §5](../../../../docs/architecture/20-module-contracts.md) · Taxonomy: [Doc 06 B3](../../../../docs/architecture/06-baseline-and-diff.md) (frozen in the model)
+
+**Imports: model only** — no I/O, no clock, no logging, no config, not even `shared/` (CI rule `diff-is-pure`; a deliberate violation is a permanent CI self-test). `diffSnapshots(baseline, candidate, {payloads, ignoreRules, maxDivergences})` is a pure function: payload bytes are inputs, never fetched. Any throw is an invariant violation, fatal by design.
+
+Mechanics: Merkle short-circuit on equal snapshot roots → observation pairing by identity (exit / stream name / fs path / net sequence) → per-kind comparators. JSON streams descend via `compareJson`: objects by key, arrays **identity-keyed by `id`** when every element carries a unique primitive id (pure reorders collapse to one `order-changed`), index-paired otherwise. Exit changes where the candidate failed to run (`timeout`/`cancelled`/`output-limit`) are `probe-failed`; candidate-only net calls are `unrecorded-effect`. Ignore rules (frozen v1 language: `*`-globs over formatted paths like `stream:stdout/json:$.meta.*`) drop divergences before the deterministic sort. Value refs are content addresses of the differing values; whole-stream refs are real CAS objects, leaf-value refs are identities only (v1). The size ceiling (default 1000) throws rather than silently truncating.

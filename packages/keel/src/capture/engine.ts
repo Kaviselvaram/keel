@@ -20,21 +20,14 @@ import {
   sealBaseline,
   withSnapshotRef,
 } from '../model/index.js';
-import type {
-  Baseline,
-  BaselineRejection,
-  ContentHash,
-  EnvironmentFingerprint,
-  Snapshot,
-} from '../model/index.js';
-import { buildChildEnv, detectPlatform } from '../execution/index.js';
+import type { Baseline, BaselineRejection, ContentHash, Snapshot } from '../model/index.js';
+import { buildChildEnv, currentEnvironmentFingerprint, detectPlatform, hookExecutionRequest, toExecutionRequest, toProbeSpec } from '../execution/index.js';
 import type { ExecutionEngine, ExecutionResult } from '../execution/index.js';
 import { normalizeExecution } from './normalizer.js';
 import type { NormalizedExecution } from './normalizer.js';
 import type { NormalizationRule } from './rules.js';
 import { RULESET_VERSION } from './rules.js';
-import { hookExecutionRequest, toExecutionRequest, toProbeSpec } from './probe-plan.js';
-import type { CaptureProbe } from './probe-plan.js';
+import type { ResolvedProbe as CaptureProbe } from '../execution/index.js';
 import { findFlappingPath } from './verification.js';
 
 /* ── consumer-owned storage ports (C22) ──────────────────────────────── */
@@ -129,7 +122,7 @@ export class CaptureEngine {
         gitCommit: request.git.commit,
         gitDirty: request.git.dirty,
         configHash: request.configHash,
-        environment: this.environmentFingerprint(armedUnion),
+        environment: currentEnvironmentFingerprint(armedUnion),
         keelVersion: request.keelVersion,
         normalizationRulesetVersion: RULESET_VERSION,
       },
@@ -189,7 +182,7 @@ export class CaptureEngine {
         ...baseline,
         provenance: {
           ...baseline.provenance,
-          environment: this.environmentFingerprint(armedUnion),
+          environment: currentEnvironmentFingerprint(armedUnion),
         },
       },
       this.options.clock.epochMillis(),
@@ -203,17 +196,6 @@ export class CaptureEngine {
     return { status: 'sealed', baseline: sealed, secretFindings };
   }
 
-  private environmentFingerprint(interceptorVersions: Record<string, string>): EnvironmentFingerprint {
-    const platform = detectPlatform();
-    return {
-      os: platform.os,
-      arch: platform.arch,
-      runtimeName: platform.runtimeName,
-      runtimeVersion: platform.runtimeVersion,
-      icuVersion: process.versions.icu ?? 'none',
-      interceptorVersions: { ...interceptorVersions },
-    };
-  }
 
   private assertNotCancelled(signal: AbortSignal): void {
     if (signal.aborted) {

@@ -21,7 +21,8 @@ export type { NormalizedExecution } from './normalizer.js';
 export { BUILTIN_RULES, SECRET_RULES, VOLATILE_RULES, RULESET_VERSION, makeRule } from './rules.js';
 export type { NormalizationRule } from './rules.js';
 
-export { toProbeSpec, toExecutionRequest, requiredInterceptors } from './probe-plan.js';
-export type { CaptureProbe } from './probe-plan.js';
+// Probe planning moved to execution/ (its Doc 20 §2 contract home); aliases keep this surface stable.
+export { toProbeSpec, toExecutionRequest, requiredInterceptors } from '../execution/index.js';
+export type { ResolvedProbe as CaptureProbe } from '../execution/index.js';
 
 export { firstJsonDifference, findFlappingPath } from './verification.js';

@@ -17,8 +17,8 @@ import type { ProbeSpec } from '../model/index.js';
 import type { ExecutionRequest } from '@keel/runner-sdk';
 import type { InterceptorCapability } from '@keel/runner-sdk';
 
-/** A probe as capture consumes it (structurally produced from ConfigSnapshot by services). */
-export interface CaptureProbe {
+/** A fully resolved probe, ready for planning (produced from ConfigSnapshot by services; consumed by capture and replay). */
+export interface ResolvedProbe {
   readonly name: string;
   readonly runner: string;
   readonly command: string;
@@ -38,7 +38,7 @@ export interface CaptureProbe {
 const encoder = new TextEncoder();
 const HOOK_GRACE_MS = 500;
 
-export function toProbeSpec(probe: CaptureProbe): ProbeSpec {
+export function toProbeSpec(probe: ResolvedProbe): ProbeSpec {
   return createProbeSpec({
     name: probe.name,
     runner: probe.runner,
@@ -76,7 +76,7 @@ export function requiredInterceptors(
 }
 
 export function toExecutionRequest(
-  probe: CaptureProbe,
+  probe: ResolvedProbe,
   env: Readonly<Record<string, string>>,
 ): ExecutionRequest {
   return {
@@ -103,7 +103,7 @@ export function toExecutionRequest(
 /** Hooks are shell command lines (fixture lifecycle, Doc 04) — wrapped per platform. */
 export function hookExecutionRequest(
   hookCommand: string,
-  probe: CaptureProbe,
+  probe: ResolvedProbe,
   env: Readonly<Record<string, string>>,
   platformOs: string,
 ): ExecutionRequest {

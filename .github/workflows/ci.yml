@@ -105,6 +105,30 @@ jobs:
             exit 1
           fi
           echo "capture ports gate fired as expected"
+          rm packages/keel/src/capture/gate-selftest-violation.ts
+      - name: Inject forbidden import (replay -> capture, violates Doc 20 §4 normalizer port)
+        run: |
+          printf "import '../capture/index.js';\nexport {};\n" \
+            > packages/keel/src/replay/gate-selftest-violation.ts
+      - name: Expect depcruise to fail on replay-capture violation
+        run: |
+          if pnpm depcruise; then
+            echo "::error::dependency gate FAILED TO FIRE on replay importing capture"
+            exit 1
+          fi
+          echo "replay ports gate fired as expected"
+          rm packages/keel/src/replay/gate-selftest-violation.ts
+      - name: Inject forbidden import (diff -> shared, violates diff purity C8)
+        run: |
+          printf "import '../shared/index.js';\nexport {};\n" \
+            > packages/keel/src/diff/gate-selftest-violation.ts
+      - name: Expect depcruise to fail on diff purity violation
+        run: |
+          if pnpm depcruise; then
+            echo "::error::dependency gate FAILED TO FIRE on diff purity"
+            exit 1
+          fi
+          echo "diff purity gate fired as expected"
 
   matrix:
     name: Full matrix (${{ matrix.os }}, node ${{ matrix.node }})

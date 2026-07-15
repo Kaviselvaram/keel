@@ -171,6 +171,10 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Build first (with AI present): produces @keel/runner-sdk's type
+      # declarations that the deterministic typecheck resolves, plus the
+      # classify-free keel dist that dist-importing deterministic tests use.
+      - run: pnpm build
       - name: Delete the entire AI layer
         run: rm -rf packages/keel/src/classify packages/keel/src/inference
       - name: Deterministic core must still typecheck without AI

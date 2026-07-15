@@ -14,6 +14,13 @@ export type CliCommand =
   | { readonly kind: 'report'; readonly verdictId: string; readonly json: boolean }
   | { readonly kind: 'baseline-ls' }
   | { readonly kind: 'baseline-rm'; readonly id: string }
+  | {
+      readonly kind: 'suppress';
+      readonly stableId?: string;
+      readonly pattern?: string;
+      readonly reason: string;
+      readonly expiresInDays?: number;
+    }
   | { readonly kind: 'invalid'; readonly message: string };
 
 export const USAGE = `keel — local-first regression oracle for AI coding agents
@@ -29,6 +36,8 @@ Usage:
                [--json]
   keel baseline ls               List baselines
   keel baseline rm <id>          Remove a baseline (objects become GC-collectable)
+  keel suppress --reason <r>     Accept a divergence (facts unchanged; ADR-014)
+               [--stable-id <id> | --pattern <glob>] [--expires-in-days <n>]
   keel mcp                       Serve the MCP stdio interface (agents; Doc 09)
   keel --version | --help
 
@@ -41,7 +50,15 @@ interface Parsed {
   readonly error?: string;
 }
 
-const VALUE_FLAGS = new Set(['--label', '--probe', '--baseline']);
+const VALUE_FLAGS = new Set([
+  '--label',
+  '--probe',
+  '--baseline',
+  '--stable-id',
+  '--pattern',
+  '--reason',
+  '--expires-in-days',
+]);
 const BOOLEAN_FLAGS = new Set(['--json']);
 
 function scan(argv: readonly string[]): Parsed {
@@ -118,6 +135,31 @@ export function parseCli(argv: readonly string[]): CliCommand {
         return { kind: 'baseline-rm', id };
       }
       return { kind: 'invalid', message: `unknown baseline subcommand '${rest[0] ?? ''}'` };
+    }
+    case 'suppress': {
+      const reason = single(flags, '--reason');
+      if (reason === undefined) return { kind: 'invalid', message: 'suppress requires --reason' };
+      const stableId = single(flags, '--stable-id');
+      const pattern = single(flags, '--pattern');
+      if ((stableId === undefined) === (pattern === undefined)) {
+        return { kind: 'invalid', message: 'suppress requires exactly one of --stable-id or --pattern' };
+      }
+      const expiresRaw = single(flags, '--expires-in-days');
+      let expiresInDays: number | undefined;
+      if (expiresRaw !== undefined) {
+        const parsed = Number(expiresRaw);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+          return { kind: 'invalid', message: '--expires-in-days must be a positive number' };
+        }
+        expiresInDays = parsed;
+      }
+      return {
+        kind: 'suppress',
+        reason,
+        ...(stableId === undefined ? {} : { stableId }),
+        ...(pattern === undefined ? {} : { pattern }),
+        ...(expiresInDays === undefined ? {} : { expiresInDays }),
+      };
     }
     default:
       return { kind: 'invalid', message: `unknown command '${command ?? ''}'` };

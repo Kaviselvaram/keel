@@ -20,6 +20,7 @@ import {
   compareDivergences,
   createCheckRun,
   createVerdict,
+  withAnnotations,
 } from '../model/index.js';
 import type {
   Baseline,
@@ -37,6 +38,14 @@ import { diffSnapshots } from '../diff/index.js';
 import type { ExecutionEngine } from '../execution/index.js';
 import type { KeelStore } from '../storage/index.js';
 import { compileRules, toResolvedProbes } from './probe-mapping.js';
+import type {
+  CodeDiffSource,
+  DivergenceEvidence,
+  IntentClassifierPort,
+} from './classifier-port.js';
+
+/** Bound on the value excerpt handed to the classifier (evidence stays small). */
+const MAX_EXCERPT_BYTES = 4096;
 
 /** Interceptor versions the current environment would arm — mirrors capture's union (Doc 06 A4). */
 function currentInterceptorVersions(
@@ -72,6 +81,14 @@ export interface CheckServiceOptions {
   readonly logger: Logger;
   readonly clock: Clock;
   readonly treeDigest: TreeDigest;
+  /**
+   * Advisory classifier (Doc 20 §6). Optional and consumer-owned (C22): when
+   * absent — including the AI-deletable build (C3) — checks run identically
+   * with zero annotations. Wired only at composition roots.
+   */
+  readonly classifier?: IntentClassifierPort;
+  /** Injected code-diff source for the classifier's evidence (C23). */
+  readonly codeDiff?: CodeDiffSource;
 }
 
 export interface CheckCommand {
@@ -309,15 +326,88 @@ export class CheckService {
         totalMs: this.options.clock.epochMillis() - parts.startedAt,
       },
     });
-    // Facts first (C11): persisted before any adapter sees it, before any
-    // future annotation step exists.
+    // Facts first (C11): persisted before any adapter sees it and before the
+    // advisory classification step below.
     await this.options.store.verdicts.saveVerdict(verdict);
+
+    // Advisory classification (Doc 07, Doc 20 §6): additive annotations,
+    // strictly after facts. Total failure degrades to no annotations — never
+    // fails the check, never alters facts.
+    const annotated = await this.classify(verdict, command, baseline, parts.logger);
+
     parts.logger.info('check.run.finish', {
       verdictId: verdict.id,
       status: verdict.status,
       divergences: parts.divergences.length,
+      annotations: annotated.annotations.length,
       treeMutated,
     });
-    return { verdict, baselineId: baseline.id };
+    return { verdict: annotated, baselineId: baseline.id };
+  }
+
+  /** Runs Tier-1 classification and persists annotations; returns the (possibly annotated) verdict. */
+  private async classify(
+    verdict: Verdict,
+    command: CheckCommand,
+    baseline: Baseline,
+    logger: Logger,
+  ): Promise<Verdict> {
+    const classifier = this.options.classifier;
+    if (classifier === undefined || verdict.status !== 'diverged' || verdict.divergences.length === 0) {
+      return verdict;
+    }
+    try {
+      const codeDiff = (await this.options.codeDiff?.(baseline.provenance.gitCommit)) ?? '';
+      const suppressedStableIds = (await this.options.store.suppressions.listByStatus('active'))
+        .filter((suppression) => suppression.target.kind === 'stable-id')
+        .map((suppression) => (suppression.target as { readonly stableId: string }).stableId);
+      const evidence = await Promise.all(
+        verdict.divergences.map((divergence) => this.buildEvidence(divergence)),
+      );
+      const probes = Object.fromEntries(
+        Object.entries(command.config.probes).map(([name, probe]) => [
+          name,
+          { runner: probe.runner, referencedPaths: [probe.command, ...probe.args] },
+        ]),
+      );
+      const annotations = await classifier.classify({
+        evidence,
+        codeDiff,
+        probes,
+        suppressedStableIds,
+        signal: command.signal,
+      });
+      if (annotations.length === 0) return verdict;
+      const annotated = withAnnotations(verdict, annotations);
+      await this.options.store.verdicts.attachAnnotations(annotated);
+      return annotated;
+    } catch (error) {
+      // Advisory (Doc 20 §6): classification failure is visible but never
+      // fails a check — the facts are already safely persisted.
+      logger.warn('check.classify.degraded', {
+        verdictId: verdict.id,
+        detail: error instanceof Error ? error.message : String(error),
+      });
+      return verdict;
+    }
+  }
+
+  /** Resolves bounded value excerpts for one divergence (whole-stream refs only; leaf refs are identity-only). */
+  private async buildEvidence(divergence: Divergence): Promise<DivergenceEvidence> {
+    return {
+      divergence,
+      baselineExcerpt: await this.excerpt(divergence.baselineValueRef),
+      candidateExcerpt: await this.excerpt(divergence.candidateValueRef),
+    };
+  }
+
+  private async excerpt(ref: ContentHash | null): Promise<string | null> {
+    if (ref === null) return null;
+    try {
+      const bytes = await this.options.store.objects.get(ref);
+      return new TextDecoder().decode(bytes.subarray(0, MAX_EXCERPT_BYTES));
+    } catch {
+      return null; // leaf-value refs are not materialized in v1
+    }
   }
 }

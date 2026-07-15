@@ -18,6 +18,7 @@ import {
   ReportService,
   SuppressionService,
 } from '../services/index.js';
+import { HeuristicClassifier } from '../classify/index.js';
 import type { TreeDigest } from '../services/index.js';
 import { McpServer } from './server.js';
 import type { ToolRuntimeFactory } from './server.js';
@@ -35,6 +36,8 @@ export interface RunMcpServerOptions {
   /** Injected composition ports (spawning root owns process acquisition — the recorded C23 ruling). */
   readonly acquireGit: () => Promise<{ commit: string | null; dirty: boolean; branch: string | null }>;
   readonly treeDigest: TreeDigest;
+  /** Injected code-diff source for the advisory classifier (C23). */
+  readonly codeDiff: (baselineCommit: string | null) => Promise<string>;
 }
 
 /** Serves one MCP session over the provided stdio; resolves when the session ends. */
@@ -61,7 +64,13 @@ export async function runMcpServer(options: RunMcpServerOptions): Promise<void> 
           config: { ok: true, snapshot },
           services: {
             capture: new CaptureService({ ...shared, execution, keelVersion: options.keelVersion }),
-            check: new CheckService({ ...shared, execution, treeDigest: options.treeDigest }),
+            check: new CheckService({
+              ...shared,
+              execution,
+              treeDigest: options.treeDigest,
+              classifier: new HeuristicClassifier(),
+              codeDiff: options.codeDiff,
+            }),
             report: new ReportService(shared),
             baselines: new BaselineAdminService(store),
             suppressions: new SuppressionService(store, systemClock),

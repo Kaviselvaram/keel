@@ -143,6 +143,45 @@ jobs:
             exit 1
           fi
           echo "mcp adapter isolation gate fired as expected"
+          rm packages/keel/src/services/gate-selftest-violation.ts
+      - name: Inject forbidden import (classify -> storage, violates Doc 20 §6)
+        run: |
+          printf "import '../storage/index.js';\nexport {};\n" \
+            > packages/keel/src/classify/gate-selftest-violation.ts
+      - name: Expect depcruise to fail on classify boundary violation
+        run: |
+          if pnpm depcruise; then
+            echo "::error::dependency gate FAILED TO FIRE on classify importing storage"
+            exit 1
+          fi
+          echo "classify boundary gate fired as expected"
+
+  ai-deletable:
+    # Doc 07 §1, C3/L2: the deterministic oracle must be fully functional with
+    # zero AI. This job deletes classify/ + inference/ and proves the
+    # deterministic core still compiles and its tests pass — AI is provably
+    # non-load-bearing, not merely documented as such.
+    name: AI-deletable core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Delete the entire AI layer
+        run: rm -rf packages/keel/src/classify packages/keel/src/inference
+      - name: Deterministic core must still typecheck without AI
+        run: pnpm --filter keel exec tsc -p tsconfig.deterministic.json
+      - name: Deterministic tests must still pass without AI
+        # Excludes adapters (cli/mcp — the AI-wiring layer) and the AI module
+        # tests; everything else is the deterministic oracle and must be green.
+        run: >
+          pnpm exec vitest run
+          --exclude '**/cli/**' --exclude '**/mcp/**' --exclude '**/classify/**'
+          --exclude '**/*classification*'
 
   matrix:
     name: Full matrix (${{ matrix.os }}, node ${{ matrix.node }})

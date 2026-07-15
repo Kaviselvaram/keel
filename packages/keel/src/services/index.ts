@@ -24,6 +24,14 @@ export { BaselineAdminService } from './baseline-admin-service.js';
 export { SuppressionService } from './suppression-service.js';
 export type { SuppressCommand } from './suppression-service.js';
 
+export type {
+  IntentClassifierPort,
+  ClassificationRequest,
+  DivergenceEvidence,
+  ClassifierProbeMeta,
+  CodeDiffSource,
+} from './classifier-port.js';
+
 export { toResolvedProbes, compileRules } from './probe-mapping.js';
 
 // Adapter-visible result types re-exported at the service seam (C26: adapters

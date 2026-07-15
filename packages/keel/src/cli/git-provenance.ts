@@ -49,3 +49,17 @@ export async function treeDigest(cwd: string): Promise<string | null> {
   const status = await git(cwd, ['status', '--porcelain']);
   return hashBytes(new TextEncoder().encode(`${commit}\n${status ?? ''}`));
 }
+
+const MAX_DIFF_BYTES = 200_000;
+
+/**
+ * Unified diff from the baseline commit (when known and present) to the
+ * working tree — the classifier's code-diff evidence (Doc 07 §2). Bounded;
+ * '' outside a repo or on any git error (classification degrades gracefully).
+ */
+export async function acquireCodeDiff(cwd: string, baselineCommit: string | null): Promise<string> {
+  const from = baselineCommit ?? 'HEAD';
+  const out = await git(cwd, ['diff', '--no-color', from, '--', '.']);
+  if (out === null) return '';
+  return out.length > MAX_DIFF_BYTES ? out.slice(0, MAX_DIFF_BYTES) : out;
+}

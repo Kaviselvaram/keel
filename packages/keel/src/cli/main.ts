@@ -27,10 +27,12 @@ import {
   CaptureService,
   CheckService,
   ReportService,
+  SuppressionService,
 } from '../services/index.js';
+import { HeuristicClassifier } from '../classify/index.js';
 import { runMcpServer } from '../mcp/index.js';
 import { parseCli, USAGE } from './args.js';
-import { acquireGitProvenance, treeDigest } from './git-provenance.js';
+import { acquireCodeDiff, acquireGitProvenance, treeDigest } from './git-provenance.js';
 import { renderBaselines, renderCaptureResult, renderReport } from './render.js';
 
 const require = createRequire(import.meta.url);
@@ -119,6 +121,7 @@ async function main(): Promise<number> {
         output: { write: (line) => void process.stdout.write(line) },
         acquireGit: () => acquireGitProvenance(cwd),
         treeDigest: () => treeDigest(cwd),
+        codeDiff: (baselineCommit) => acquireCodeDiff(cwd, baselineCommit),
       });
       return EXIT_CODES.clean;
     }
@@ -172,6 +175,9 @@ async function main(): Promise<number> {
           logger: wiring.logger,
           clock: systemClock,
           treeDigest: () => treeDigest(cwd),
+          // AI wiring (Tier 1 heuristics; Tier 2 LLM arrives in Phase 9).
+          classifier: new HeuristicClassifier(),
+          codeDiff: (baselineCommit) => acquireCodeDiff(cwd, baselineCommit),
         });
         const outcome = await service.check({
           config,
@@ -201,6 +207,19 @@ async function main(): Promise<number> {
         new BaselineAdminService(wiring.store).remove(command.id);
         console.log(`removed baseline ${command.id} (objects reclaimable via gc)`);
         return EXIT_CODES.clean;
+      case 'suppress': {
+        const suppression = await new SuppressionService(wiring.store, systemClock).suppress({
+          reason: command.reason,
+          createdBy: 'cli',
+          ...(command.stableId === undefined ? {} : { stableId: command.stableId }),
+          ...(command.pattern === undefined ? {} : { pattern: command.pattern }),
+          ...(command.expiresInDays === undefined ? {} : { expiresInDays: command.expiresInDays }),
+        });
+        console.log(
+          `suppression ${suppression.id} recorded (${suppression.target.kind}) — facts unchanged, presentation filtered`,
+        );
+        return EXIT_CODES.clean;
+      }
       default:
         return EXIT_CODES.internal;
     }

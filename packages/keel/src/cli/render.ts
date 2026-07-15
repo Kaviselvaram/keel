@@ -22,10 +22,21 @@ export function renderReport(report: CheckReport): string {
     lines.push(`  error(${verdict.error.scope}): ${verdict.error.detail}`);
   }
   if (report.divergences.length > 0) {
+    // Advisory intent labels (Doc 07) by divergence — never facts (L1).
+    const labelByStableId = new Map(
+      verdict.annotations.map((annotation) => [annotation.divergenceStableId, annotation]),
+    );
     lines.push(`  divergences: ${String(report.divergences.length)} (${String(report.unsuppressedCount)} unsuppressed)`);
     for (const entry of report.divergences) {
       const suppressed = entry.suppressedBy === null ? '' : ` [suppressed by ${entry.suppressedBy}]`;
-      lines.push(`    ${entry.divergence.kind}  ${entry.divergence.probeName}  ${entry.formattedPath}${suppressed}`);
+      const annotation = labelByStableId.get(entry.divergence.stableId);
+      const intent =
+        annotation === undefined || annotation.label === 'uncertain'
+          ? ''
+          : ` → ${annotation.label} (${
+              annotation.attribution.tier === 'heuristic' ? annotation.attribution.ruleId : annotation.attribution.tier
+            })`;
+      lines.push(`    ${entry.divergence.kind}  ${entry.divergence.probeName}  ${entry.formattedPath}${intent}${suppressed}`);
     }
   }
   lines.push(

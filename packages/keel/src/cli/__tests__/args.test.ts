@@ -23,6 +23,34 @@ describe('parseCli', () => {
     expect(parseCli(['baseline', 'rm', 'B1'])).toEqual({ kind: 'baseline-rm', id: 'B1' });
   });
 
+  it('parses suppress with exactly one target and optional expiry', () => {
+    expect(parseCli(['suppress', '--stable-id', 'abc', '--reason', 'ok'])).toEqual({
+      kind: 'suppress',
+      stableId: 'abc',
+      reason: 'ok',
+    });
+    expect(parseCli(['suppress', '--pattern', 'stream:*', '--reason', 'ok', '--expires-in-days', '7'])).toEqual({
+      kind: 'suppress',
+      pattern: 'stream:*',
+      reason: 'ok',
+      expiresInDays: 7,
+    });
+  });
+
+  it('rejects invalid suppress invocations', () => {
+    expect(parseCli(['suppress'])).toMatchObject({ kind: 'invalid', message: expect.stringContaining('--reason') });
+    expect(parseCli(['suppress', '--reason', 'x'])).toMatchObject({
+      kind: 'invalid',
+      message: expect.stringContaining('exactly one'),
+    });
+    expect(parseCli(['suppress', '--stable-id', 'a', '--pattern', 'p', '--reason', 'x'])).toMatchObject({
+      kind: 'invalid',
+    });
+    expect(parseCli(['suppress', '--stable-id', 'a', '--reason', 'x', '--expires-in-days', 'soon'])).toMatchObject({
+      kind: 'invalid',
+    });
+  });
+
   it('rejects malformed input with actionable messages', () => {
     expect(parseCli(['fly'])).toMatchObject({ kind: 'invalid' });
     expect(parseCli(['capture', '--label'])).toMatchObject({ kind: 'invalid', message: expect.stringContaining('--label') });

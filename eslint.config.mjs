@@ -29,6 +29,13 @@ export default tseslint.config(
     },
   },
   {
+    // Tests may report metrics (e.g. eval-corpus precision/recall, Doc 07 §5).
+    files: ['packages/**/__tests__/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     // Operational scripts (Doc 03) and plain-JS test fixtures: Node ESM with runtime globals.
     files: ['scripts/**/*.mjs', 'packages/**/__tests__/fixtures/**/*.mjs', 'examples/**/*.mjs'],
     languageOptions: {

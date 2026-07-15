@@ -1,0 +1,14 @@
+{
+  "//": "AI-deletable proof target (Doc 07 §1, C3/L2). Typechecks the deterministic core — model, execution, storage, capture, replay, diff, config, services, shared, observability — with classify/ + inference/ deleted. Excludes the adapters (cli, mcp), which are the AI-wiring layer and legitimately reference classify at their composition roots. If this compiles with classify/inference removed, AI is proven non-load-bearing.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "exclude": [
+    "src/cli",
+    "src/mcp",
+    "src/classify",
+    "src/inference",
+    "src/**/*classification*"
+  ]
+}

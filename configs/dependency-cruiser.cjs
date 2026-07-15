@@ -132,10 +132,10 @@ module.exports = {
     },
     {
       name: 'classify-forbidden-edges',
-      comment: 'Doc 20 §6: classify receives evidence and returns annotations; no storage, no execution',
+      comment: 'Doc 20 §6 / Doc 21: classify depends on model + inference-port + config only; receives evidence, returns annotations. Forbidden: storage, execution, capture, replay, diff internals, adapters, and services (deletability C3 — services owns the port, classify implements structurally).',
       severity: 'error',
       from: { path: '^packages/keel/src/classify' },
-      to: { path: '^packages/keel/src/(storage|execution|capture|replay|mcp|cli|services)' },
+      to: { path: '^packages/keel/src/(storage|execution|capture|replay|diff|mcp|cli|services)' },
     },
     {
       name: 'sqlite-only-in-storage',

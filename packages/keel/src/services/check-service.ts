@@ -38,6 +38,26 @@ import type { ExecutionEngine } from '../execution/index.js';
 import type { KeelStore } from '../storage/index.js';
 import { compileRules, toResolvedProbes } from './probe-mapping.js';
 
+/** Interceptor versions the current environment would arm — mirrors capture's union (Doc 06 A4). */
+function currentInterceptorVersions(
+  config: ConfigSnapshot,
+  capabilitiesOf: (runnerId: string) => { interceptors: Readonly<Partial<Record<string, string>>> },
+): Record<string, string> {
+  const versions: Record<string, string> = {};
+  for (const probe of Object.values(config.probes)) {
+    const offered = capabilitiesOf(probe.runner).interceptors;
+    const wants: string[] = [];
+    if (probe.interception.clock === 'virtual') wants.push('clock');
+    if (probe.interception.rng === 'seeded') wants.push('rng');
+    if (probe.interception.network !== 'forbidden' || probe.runner !== 'command') wants.push('network');
+    for (const capability of wants) {
+      const version = offered[capability];
+      if (version !== undefined) versions[capability] = version;
+    }
+  }
+  return versions;
+}
+
 /** v1 scope resolution: sound over-approximation — 'diff' cannot prove any probe unaffected yet (Phase 12). */
 function resolveScope(scope: CheckCommand['scope']): readonly string[] | undefined {
   return scope?.kind === 'probes' ? scope.names : undefined;
@@ -115,7 +135,9 @@ export class CheckService {
         normalize: (result) => normalizeExecution(result, rules),
         currentConfigHash: command.config.configHash,
         currentRulesetVersion: RULESET_VERSION,
-        currentInterceptorVersions: {},
+        currentInterceptorVersions: currentInterceptorVersions(command.config, (id) =>
+          this.options.execution.capabilitiesOf(id),
+        ),
         gitCommit: command.gitCommit,
         parentEnv: command.parentEnv,
         signal: command.signal,

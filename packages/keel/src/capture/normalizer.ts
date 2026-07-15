@@ -122,6 +122,19 @@ export function normalizeExecution(
     });
   }
 
+  // Side-channel net calls (Doc 24 P7) — URLs are scrubbed like any value.
+  for (const call of result.sideChannel.netCalls) {
+    observations.push({
+      kind: 'net-call',
+      sequence: call.sequence,
+      request: { method: call.method, url: scrubText(call.url, rules, firedSecrets) },
+      response: {
+        status: call.status,
+        ...(call.responseBodyHash === undefined ? {} : { bodyHash: call.responseBodyHash as ContentHash }),
+      },
+    });
+  }
+
   observations.sort(compareObservations);
   return { observations, payloads, secretFindings: [...firedSecrets].sort() };
 }

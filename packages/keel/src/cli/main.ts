@@ -20,7 +20,7 @@ import { createNdjsonLogger } from '../observability/index.js';
 import type { Logger } from '../observability/index.js';
 import { canonicalSerialize } from '../model/index.js';
 import { loadConfig } from '../config/index.js';
-import { CommandRunner, ExecutionEngine, RunnerRegistry } from '../execution/index.js';
+import { CommandRunner, ExecutionEngine, NodeRunner, RunnerRegistry } from '../execution/index.js';
 import { KeelStore } from '../storage/index.js';
 import {
   BaselineAdminService,
@@ -58,7 +58,7 @@ async function openWiring(storeDir: string): Promise<Wiring> {
   const sink = createWriteStream(path.join(logsDir, `keel-${day}.log`), { flags: 'a' });
   const logger = createNdjsonLogger({ sink: { write: (line) => void sink.write(line) } });
   const store = await KeelStore.open({ directory: storeDir, logger });
-  const execution = new ExecutionEngine({ registry: new RunnerRegistry([new CommandRunner()]), logger });
+  const execution = new ExecutionEngine({ registry: new RunnerRegistry([new CommandRunner(), new NodeRunner()]), logger });
   return { store, logger, execution };
 }
 

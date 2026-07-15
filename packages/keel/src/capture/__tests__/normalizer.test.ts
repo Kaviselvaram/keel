@@ -27,6 +27,7 @@ function syntheticResult(stdout: Uint8Array, stderr = new Uint8Array()): Executi
     armedInterceptors: {},
     startedAtEpochMs: 0,
     durationMs: 0,
+    sideChannel: { netCalls: [], report: null },
   };
 }
 

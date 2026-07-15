@@ -96,7 +96,9 @@ export function toExecutionRequest(
     },
     mode: 'record',
     interceptors: requiredInterceptors(probe.interception),
-    interceptorConfig: {},
+    // The network POLICY travels as interceptor config: capability-bearing
+    // runners read it (record/stub/forbidden); the command runner ignores it.
+    interceptorConfig: { networkMode: probe.interception.network },
   };
 }
 

@@ -26,3 +26,8 @@ export { toProbeSpec, toExecutionRequest, hookExecutionRequest, requiredIntercep
 export type { ResolvedProbe } from './probe-plan.js';
 
 export { currentEnvironmentFingerprint } from './platform.js';
+
+export { NodeRunner, NODE_RUNNER_ID, DEFAULT_VIRTUAL_EPOCH_MS, deriveSeed } from './runners/node/node-runner.js';
+export { NODE_INTERCEPTOR_VERSIONS, SIDE_CHANNEL_PROTOCOL_VERSION } from './runners/node/preload-source.js';
+export { parseSideChannel, EMPTY_SIDE_CHANNEL } from './side-channel.js';
+export type { SideChannelData, RawNetCall, InterceptorRuntimeReport } from './side-channel.js';

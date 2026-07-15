@@ -19,6 +19,8 @@ import type { ExecutionConditions, PlatformInfo } from './platform.js';
 import { diffManifests, FsBudgetExceeded, scanManifest } from './manifest.js';
 import type { RawFsEvent } from './manifest.js';
 import { controlledSpawn } from './process-control.js';
+import { EMPTY_SIDE_CHANNEL, parseSideChannel } from './side-channel.js';
+import type { SideChannelData } from './side-channel.js';
 import type { RunnerRegistry } from './registry.js';
 import { createWorkspace } from './workspace.js';
 
@@ -45,6 +47,8 @@ export interface ExecutionResult {
   /** Wall-clock metadata — recorded, never part of the fingerprint. */
   readonly startedAtEpochMs: number;
   readonly durationMs: number;
+  /** Side-channel results (Doc 05, additive): net calls + interceptor runtime report. */
+  readonly sideChannel: SideChannelData;
 }
 
 export interface ExecuteOptions {
@@ -74,6 +78,11 @@ export class ExecutionEngine {
     this.logger = options.logger;
     this.clock = options.clock ?? systemClock;
     this.platform = options.platform ?? detectPlatform();
+  }
+
+  /** Capability reporting (Doc 20 §2): registry discovery surfaced for provenance policy. */
+  capabilitiesOf(runnerId: string) {
+    return this.registry.get(runnerId).capabilities();
   }
 
   async execute(request: ExecutionRequest, options: ExecuteOptions): Promise<ExecutionResult> {
@@ -128,6 +137,7 @@ export class ExecutionEngine {
         armedInterceptors: {},
         startedAtEpochMs,
         durationMs: 0,
+        sideChannel: EMPTY_SIDE_CHANNEL,
       };
     }
 
@@ -171,6 +181,7 @@ export class ExecutionEngine {
         signal: options.signal,
         logger: this.logger,
         ...(options.onChunk === undefined ? {} : { onChunk: options.onChunk }),
+        ...(plan.sideChannel === true ? { sideChannel: true } : {}),
       });
 
       let fsEvents: readonly RawFsEvent[] = [];
@@ -221,6 +232,8 @@ export class ExecutionEngine {
         armedInterceptors: plan.armedInterceptors,
         startedAtEpochMs,
         durationMs,
+        sideChannel:
+          plan.sideChannel === true ? parseSideChannel(controlled.sideChannel) : EMPTY_SIDE_CHANNEL,
       };
     } finally {
       await workspace.cleanup();

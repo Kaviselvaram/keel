@@ -34,6 +34,8 @@ export interface ControlledExit {
   readonly stderr: Uint8Array;
   readonly stdoutTruncated: boolean;
   readonly stderrTruncated: boolean;
+  /** Raw fd-3 bytes when the plan requested a side channel (Doc 05); empty otherwise. */
+  readonly sideChannel: Uint8Array;
 }
 
 export interface ControlledSpawnOptions {
@@ -48,6 +50,8 @@ export interface ControlledSpawnOptions {
   readonly logger: Logger;
   /** Live streaming sink; chunks are forwarded before cap accounting cuts off. */
   readonly onChunk?: (chunk: StreamChunk) => void;
+  /** Open fd 3 as an additional pipe for the side-channel protocol. */
+  readonly sideChannel?: boolean;
 }
 
 function killTreeWindows(pid: number, logger: Logger): void {
@@ -83,7 +87,7 @@ export function controlledSpawn(options: ControlledSpawnOptions): Promise<Contro
     const child = spawn(command, args, {
       cwd: options.cwd,
       env: options.env,
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: options.sideChannel === true ? ['pipe', 'pipe', 'pipe', 'pipe'] : ['pipe', 'pipe', 'pipe'],
       detached: !isWindows,
       windowsHide: true,
     });
@@ -170,6 +174,20 @@ export function controlledSpawn(options: ControlledSpawnOptions): Promise<Contro
     if (child.stdout) attachStream(child.stdout, 'stdout', stdoutChunks);
     if (child.stderr) attachStream(child.stderr, 'stderr', stderrChunks);
 
+    // Side channel: bounded collection, outside the stdout/stderr caps
+    // (interceptor metadata, never user payloads; 8 MiB ceiling).
+    const sideChunks: Uint8Array[] = [];
+    let sideBytes = 0;
+    const sidePipe = options.sideChannel === true ? (child.stdio[3] as NodeJS.ReadableStream | null) : null;
+    if (sidePipe !== null && sidePipe !== undefined) {
+      sidePipe.on('data', (data: Buffer) => {
+        if (sideBytes >= 8 * 1024 * 1024) return;
+        const chunk = new Uint8Array(data);
+        sideChunks.push(chunk);
+        sideBytes += chunk.byteLength;
+      });
+    }
+
     if (child.stdin) {
       if (options.stdin.kind === 'bytes') {
         child.stdin.write(options.stdin.bytes);
@@ -204,6 +222,7 @@ export function controlledSpawn(options: ControlledSpawnOptions): Promise<Contro
           stderr: concat(stderrChunks, stderrBytes),
           stdoutTruncated,
           stderrTruncated,
+          sideChannel: concat(sideChunks, sideBytes),
         });
       });
     });

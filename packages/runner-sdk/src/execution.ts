@@ -63,6 +63,12 @@ export interface SpawnPlan {
   readonly files: readonly PlannedFile[];
   /** Interceptors this plan arms, with implementation versions (→ interceptor report). */
   readonly armedInterceptors: Readonly<Partial<Record<InterceptorCapability, string>>>;
+  /**
+   * Request an extra pipe (fd 3) for the side-channel protocol (Doc 05):
+   * NDJSON messages from in-process interceptors to the engine. Additive in
+   * protocol v1 — absent means no channel (Phase 2 planners unchanged).
+   */
+  readonly sideChannel?: boolean;
 }
 
 /** Raw process exit as the OS reported it. Interpretation (timeout? cancelled?) is the engine's. */

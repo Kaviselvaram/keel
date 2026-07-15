@@ -9,7 +9,7 @@
 import { systemClock, UserError } from '../shared/index.js';
 import type { Logger } from '../observability/index.js';
 import { loadConfig } from '../config/index.js';
-import { CommandRunner, ExecutionEngine, RunnerRegistry } from '../execution/index.js';
+import { CommandRunner, ExecutionEngine, NodeRunner, RunnerRegistry } from '../execution/index.js';
 import { KeelStore } from '../storage/index.js';
 import {
   BaselineAdminService,
@@ -53,7 +53,7 @@ export async function runMcpServer(options: RunMcpServerOptions): Promise<void> 
           lockTimeoutMs: 3_000,
         });
         const execution = new ExecutionEngine({
-          registry: new RunnerRegistry([new CommandRunner()]),
+          registry: new RunnerRegistry([new CommandRunner(), new NodeRunner()]),
           logger: options.logger,
         });
         const shared = { store, logger: options.logger, clock: systemClock };
